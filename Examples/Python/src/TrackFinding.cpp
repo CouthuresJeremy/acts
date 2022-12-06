@@ -23,6 +23,8 @@
 #include "ActsExamples/TrackFinding/HoughTransformSeeder.hpp"
 #include "ActsExamples/TrackFinding/MuonHoughSeeder.hpp"
 #include "ActsExamples/TrackFinding/SeedingAlgorithm.hpp"
+#include "ActsExamples/TrackFinding/SeedingFTFAlgorithm.hpp"
+#include "ActsExamples/TrackFinding/SeedingAlgorithmHashing.hpp"
 #include "ActsExamples/TrackFinding/SeedingOrthogonalAlgorithm.hpp"
 #include "ActsExamples/TrackFinding/SpacePointMaker.hpp"
 #include "ActsExamples/TrackFinding/TrackFindingAlgorithm.hpp"
@@ -265,6 +267,12 @@ void addTrackFinding(Context& ctx) {
       ActsExamples::SeedingAlgorithm, mex, "SeedingAlgorithm", inputSpacePoints,
       outputSeeds, seedFilterConfig, seedFinderConfig, seedFinderOptions,
       gridConfig, gridOptions, allowSeparateRMax, zBinNeighborsTop,
+      zBinNeighborsBottom, numPhiNeighbors);
+    
+  ACTS_PYTHON_DECLARE_ALGORITHM(
+      ActsExamples::SeedingAlgorithmHashing, mex, "SeedingAlgorithmHashing", inputSpacePoints,
+      outputSeeds, outputProtoTracks, seedFilterConfig, seedFinderConfig,
+      seedFinderOptions, gridConfig, allowSeparateRMax, zBinNeighborsTop,
       zBinNeighborsBottom, numPhiNeighbors);
 
   ACTS_PYTHON_DECLARE_ALGORITHM(ActsExamples::SeedingOrthogonalAlgorithm, mex,
