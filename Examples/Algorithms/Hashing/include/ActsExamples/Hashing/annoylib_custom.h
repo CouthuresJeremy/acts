@@ -201,6 +201,35 @@ inline T euclidean_distance(const T* x, const T* y, int f) {
   return d;
 }
 
+template<typename T>
+inline T angular_euclidean_distance(const T* x, const T* y, int f) {
+  /// First dimension is an angle, so we need to be careful about periodicity.
+  /// Here we assume that the angle is in radians, and that the difference is less than 2pi.
+  /// Other dimensions are regular Euclidean.
+
+  /// Angular part
+  T tmp=std::fabs(*x - *y);
+
+  /// If the difference is larger than pi, then we can get a smaller distance by going the other way around the circle.
+  if (tmp > M_PI){
+    tmp = 2*M_PI-tmp;
+  }
+
+  T d = tmp * tmp;
+  ++x;
+  ++y;
+
+  /// Euclidean part
+  for (int i = 1; i < f; ++i) {
+    tmp=*x - *y;
+    d += tmp * tmp;
+    ++x;
+    ++y;
+  }
+  return d;
+}
+
+
 #ifdef ANNOYLIB_USE_AVX
 // Horizontal single sum of 256bit vector.
 inline float hsum256_ps_avx(__m256 v) {
@@ -412,13 +441,13 @@ inline void two_means(const vector<Node*>& nodes, int f, Random& random, bool co
 
 struct Base {
   template<typename T, typename S, typename Node>
-  static inline void preprocess(void* nodes, size_t _s, const S node_count, const int f) {
+  static inline void preprocess(void* /*nodes unused*/, size_t /*_s unused*/, const S /*node_count unused*/, const int /*f unused*/) {
     // Override this in specific metric structs below if you need to do any pre-processing
     // on the entire set of nodes passed into this index.
   }
 
   template<typename Node>
-  static inline void zero_value(Node* dest) {
+  static inline void zero_value(Node* /*dest unused*/) {
     // Initialize any fields that require sane defaults within this node.
   }
 
@@ -792,6 +821,37 @@ struct Euclidean : Minkowski {
 
 };
 
+struct AngularEuclidean : Minkowski {
+  template<typename S, typename T>
+  static inline T distance(const Node<S, T>* x, const Node<S, T>* y, int f) {
+    return angular_euclidean_distance(x->v, y->v, f);    
+  }
+  template<typename S, typename T, typename Random>
+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+    Node<S, T>* p = (Node<S, T>*)alloca(s);
+    Node<S, T>* q = (Node<S, T>*)alloca(s);
+    two_means<T, Random, AngularEuclidean, Node<S, T> >(nodes, f, random, false, p, q);
+
+    for (int z = 0; z < f; z++)
+      n->v[z] = p->v[z] - q->v[z];
+    Base::normalize<T, Node<S, T> >(n, f);
+    n->a = 0.0;
+    for (int z = 0; z < f; z++)
+      n->a += -n->v[z] * (p->v[z] + q->v[z]) / 2;
+  }
+  template<typename T>
+  static inline T normalized_distance(T distance) {
+    return sqrt(std::max(distance, T(0)));
+  }
+  template<typename S, typename T>
+  static inline void init_node(Node<S, T>* /*unused*/, int /*unused*/) {
+  }
+  static const char* name() {
+    return "angular_euclidean";
+  }
+
+};
+
 struct Manhattan : Minkowski {
   template<typename S, typename T>
   static inline T distance(const Node<S, T>* x, const Node<S, T>* y, int f) {
@@ -841,6 +901,7 @@ class AnnoyIndexInterface {
   virtual void verbose(bool v) = 0;
   virtual void get_item(S item, T* v) const = 0;
   virtual void set_seed(R q) = 0;
+  virtual R get_seed() const = 0;
   virtual bool on_disk_build(const char* filename, char** error=NULL) = 0;
 };
 
@@ -870,13 +931,13 @@ public:
 
 protected:
   const unsigned int _f;
-  size_t _s;
+  size_t _s; // Size of each node
   S _n_items;
   void* _nodes; // Could either be mmapped, or point to a memory buffer that we reallocate
   S _n_nodes;
   S _nodes_size;
   vector<S> _roots;
-  S _K;
+  S _K; // Max number of descendants to fit into node
   R _seed;
   bool _loaded;
   bool _verbose;
@@ -896,6 +957,45 @@ public:
     unload();
   }
 
+  // Move constructor
+  AnnoyIndex(AnnoyIndex&& other) noexcept 
+    : _f{other._f},
+      _s{other._s},
+      _n_items{other._n_items},
+      _nodes{other._nodes},
+      _n_nodes{other._n_nodes},
+      _nodes_size{other._nodes_size},
+      _roots{other._roots},
+      _K{other._K},
+      _seed{other._seed},
+      _loaded{other._loaded},
+      _verbose{other._verbose},
+      _fd{other._fd},
+      _on_disk{other._on_disk},
+      _built{other._built}
+  {
+    // Avoid double free
+    other.reinitialize();
+  }
+
+  // Copy constructor
+  AnnoyIndex(const AnnoyIndex& other) : _f(other._f) {
+      // Deep copy any resources
+      _s = other._s;
+      _n_items = other._n_items;
+      _nodes = other._nodes;
+      _n_nodes = other._n_nodes;
+      _nodes_size = other._nodes_size;
+      _roots = other._roots;
+      _K = other._K;
+      _seed = other._seed;
+      _loaded = other._loaded;
+      _verbose = other._verbose;
+      _fd = other._fd;
+      _on_disk = other._on_disk;
+      _built = other._built;
+  }
+
   unsigned int get_f() const {
     return _f;
   }
@@ -911,6 +1011,9 @@ public:
       return false;
     }
     _allocate_size(item + 1);
+    if (item >= _n_items)
+      _n_items = item + 1;
+
     Node* n = _get(item);
 
     D::zero_value(n);
@@ -923,9 +1026,6 @@ public:
       n->v[z] = w[z];
 
     D::init_node(n, _f);
-
-    if (item >= _n_items)
-      _n_items = item + 1;
 
     return true;
   }
@@ -972,8 +1072,7 @@ public:
     // This way we can load them faster without reading the whole file
     _allocate_size(_n_nodes + (S)_roots.size());
     for (size_t i = 0; i < _roots.size(); i++)
-      memcpy(_get(_n_nodes + (S)i), _get(_roots[i]), _s);
-    _n_nodes += _roots.size();
+      memcpy(_get(_n_nodes++), _get(_roots[i]), _s);
 
     if (_verbose) annoylib_showUpdate("has %d nodes\n", _n_nodes);
     
@@ -1099,10 +1198,10 @@ public:
 
     // Find the roots by scanning the end of the file and taking the nodes with most descendants
     _roots.clear();
-    S m = -1;
+    S m = (S)-1;
     for (S i = _n_nodes - 1; i >= 0; i--) {
       S k = _get(i)->n_descendants;
-      if (m == -1 || k == m) {
+      if (m == (S)-1 || k == m) {
         _roots.push_back(i);
         m = k;
       } else {
@@ -1115,7 +1214,7 @@ public:
     _loaded = true;
     _built = true;
     _n_items = m;
-    if (_verbose) annoylib_showUpdate("found %lu roots with degree %d\n", _roots.size(), m);
+    if (_verbose) annoylib_showUpdate("found %zu roots with degree %d\n", _roots.size(), m);
     return true;
   }
 
@@ -1124,7 +1223,10 @@ public:
   }
 
   void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
-    // TODO: handle OOB
+    if (item < 0 || item >= _n_items) {
+        // handle OOB case
+        std::cerr << "Error: item index out of bounds\n";
+    }
     const Node* m = _get(item);
     _get_all_nns(m->v, n, search_k, result, distances);
   }
@@ -1146,13 +1248,20 @@ public:
   }
 
   void get_item(S item, T* v) const {
-    // TODO: handle OOB
+    if (item < 0 || item >= _n_items) {
+        // handle OOB case
+        std::cerr << "Error: item index out of bounds\n";
+    }
     Node* m = _get(item);
     memcpy(v, m->v, (_f) * sizeof(T));
   }
 
   void set_seed(R seed) {
     _seed = seed;
+  }
+
+  R get_seed() const {
+    return _seed;
   }
 
   void thread_build(int q, int thread_idx, ThreadedBuildPolicy& threaded_build_policy) {
@@ -1229,6 +1338,12 @@ protected:
   }
 
   Node* _get(const S i) const {
+    if (i < 0 || (i >= _n_nodes && _built) || (i >= _n_items && !_built && i >= _n_nodes)) {
+        // handle OOB case
+        std::cerr << "Error: item index out of bounds\n";
+        std::cerr << "i: " << i << " _n_items: " << _n_items << " _n_nodes: " << _n_nodes << " _nodes_size: " << _nodes_size << "\n";
+        return nullptr;
+    }
     return get_node_ptr<S, Node>(_nodes, _s, i);
   }
 
@@ -1305,7 +1420,7 @@ protected:
     // If we didn't find a hyperplane, just randomize sides as a last option
     while (_split_imbalance(children_indices[0], children_indices[1]) > 0.99) {
       if (_verbose)
-        annoylib_showUpdate("\tNo hyperplane found (left has %ld children, right has %ld children)\n",
+        annoylib_showUpdate("\tNo hyperplane found (left has %zu children, right has %zu children)\n",
           children_indices[0].size(), children_indices[1].size());
 
       children_indices[0].clear();
@@ -1355,6 +1470,9 @@ protected:
     }
 
     for (size_t i = 0; i < _roots.size(); i++) {
+      if (_roots[i]  >= _n_nodes){
+        std::cerr << "_roots[i]  >= _n_nodes\n";
+      }
       q.push(make_pair(Distance::template pq_initial_value<T>(), _roots[i]));
     }
 
@@ -1363,7 +1481,13 @@ protected:
       const pair<T, S>& top = q.top();
       T d = top.first;
       S i = top.second;
+      if (i  >= _n_nodes){
+        std::cerr << "i  >= _n_nodes\n";
+      }
+      // assert((i < _n_nodes));
+      // std::cout << "_get_all_nns while: before _get\n";
       Node* nd = _get(i);
+      // std::cout << "_get_all_nns while: after _get\n";
       q.pop();
       if (nd->n_descendants == 1 && i < _n_items) {
         nns.push_back(i);
@@ -1372,8 +1496,16 @@ protected:
         nns.insert(nns.end(), dst, &dst[nd->n_descendants]);
       } else {
         T margin = D::margin(nd, v, _f);
-        q.push(make_pair(D::pq_distance(d, margin, 1), static_cast<S>(nd->children[1])));
-        q.push(make_pair(D::pq_distance(d, margin, 0), static_cast<S>(nd->children[0])));
+        if (static_cast<S>(nd->children[1])  >= _n_nodes){
+          std::cerr << "static_cast<S>(nd->children[1])  >= _n_nodes\n";
+        } else {
+          q.push(make_pair(D::pq_distance(d, margin, 1), static_cast<S>(nd->children[1])));
+        }
+        if (static_cast<S>(nd->children[0])  >= _n_nodes){
+          std::cerr << "static_cast<S>(nd->children[0])  >= _n_nodes\n";
+        } else {
+          q.push(make_pair(D::pq_distance(d, margin, 0), static_cast<S>(nd->children[0])));
+        }
       }
     }
 
@@ -1387,11 +1519,16 @@ protected:
       if (j == last)
         continue;
       last = j;
+      // std::cout << "distances: before _get\n";
       if (_get(j)->n_descendants == 1)  // This is only to guard a really obscure case, #284
         nns_dist.push_back(make_pair(D::distance(v_node, _get(j), _f), j));
+      // std::cout << "distances: after _get\n";
     }
 
     size_t m = nns_dist.size();
+    if (m < n){
+      std::cerr << "Returned less than " << n << " nodes" << "\n";
+    }
     size_t p = n < m ? n : m; // Return this many items
     std::partial_sort(nns_dist.begin(), nns_dist.begin() + p, nns_dist.end());
     for (size_t i = 0; i < p; i++) {
