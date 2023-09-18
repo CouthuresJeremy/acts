@@ -1,6 +1,6 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2021 CERN for the benefit of the Acts project
+// Copyright (C) 2023 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,13 +40,10 @@ void addHashing(Context& ctx) {
     auto c = py::class_<Config>(alg, "Config").def(py::init<>());
 
     ACTS_PYTHON_STRUCT_BEGIN(c, Config);
-    ACTS_PYTHON_MEMBER(inputClusters);
-    ACTS_PYTHON_MEMBER(inputMeasurementParticlesMap);
-    ACTS_PYTHON_MEMBER(inputHitIds);
-    ACTS_PYTHON_MEMBER(inputSimHits);
     ACTS_PYTHON_MEMBER(inputSpacePoints);
     ACTS_PYTHON_MEMBER(bucketSize);
-    ACTS_PYTHON_MEMBER(nBucketsLimit);
+    ACTS_PYTHON_MEMBER(zBins);
+    ACTS_PYTHON_MEMBER(phiBins);
     ACTS_PYTHON_STRUCT_END();
   }
 
