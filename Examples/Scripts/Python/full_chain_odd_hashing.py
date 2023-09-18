@@ -20,6 +20,7 @@ from acts.examples.reconstruction import (
     AmbiguityResolutionConfig,
     addVertexFitting,
     VertexFinder,
+    SeedFinderOptionsArg,
 )
 
 import os
@@ -30,6 +31,9 @@ from typing import Optional, Union
 from enum import Enum
 
 import argparse
+
+eta = 4
+# eta = 2.5
 
 SeedingAlgorithm = Enum(
     "SeedingAlgorithm", "Default TruthSmeared TruthEstimated Orthogonal HashingSeeding"
@@ -43,6 +47,10 @@ SeedFinderConfigName = Enum(
     "SeedFinderConfigName", "TrackML cpp"
 )
 
+HashingMetric = Enum(
+    "HashingMetric", "dphi dR"
+)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--mu",
                     type=int,
@@ -50,7 +58,31 @@ parser.add_argument("--mu",
 parser.add_argument("--bucketSize",
                     type=int,
                     default=0)
+parser.add_argument("--nevents",
+                    type=int,
+                    # default=1000)
+                    default=100)
+parser.add_argument("--maxSeedsPerSpM",
+                    type=int,
+                    default=1)
 parser.add_argument("--seedingAlgorithm",
+                    type=str)
+parser.add_argument("--saveFilesSmall",
+                    type=bool,
+                    default=False)
+parser.add_argument("--saveFiles",
+                    type=bool,
+                    default=False)
+parser.add_argument("--AnnoySeed",
+                    type=int,
+                    default=123456789)
+parser.add_argument("--zBins",
+                    type=int,
+                    default=0)
+parser.add_argument("--phiBins",
+                    type=int,
+                    default=0)
+parser.add_argument("--metric",
                     type=str)
 args = parser.parse_args()
 
@@ -58,8 +90,14 @@ print(args)
 
 mu = args.mu
 bucketSize = args.bucketSize
+nevents = args.nevents
+saveFiles = args.saveFiles
+AnnoySeed = args.AnnoySeed
+zBins = args.zBins
+phiBins = args.phiBins
+maxSeedsPerSpM = args.maxSeedsPerSpM
 
-seedingAlgorithm = SeedingAlgorithm.Default
+seedingAlgorithm = SeedingAlgorithm.HashingSeeding
 if args.seedingAlgorithm:
     if args.seedingAlgorithm == "Default":
         seedingAlgorithm = SeedingAlgorithm.Default
@@ -67,6 +105,13 @@ if args.seedingAlgorithm:
         seedingAlgorithm = SeedingAlgorithm.Orthogonal
     elif args.seedingAlgorithm == "HashingSeeding":
         seedingAlgorithm = SeedingAlgorithm.HashingSeeding
+
+metric = HashingMetric.dphi
+if args.metric:
+    if args.metric == "dphi":
+        metric = HashingMetric.dphi
+    elif args.metric == "dR":
+        metric = HashingMetric.dR
 
 print(mu, bucketSize, seedingAlgorithm)
 
@@ -79,15 +124,22 @@ def getActsExamplesDirectory():
     return Path(__file__).parent.parent.parent
 
 
-Config = namedtuple('Config', ['mu', 'bucketSize', 'maxSeedsPerSpM', 'seedFinderConfig', 'detector', 'seedingAlgorithm'], 
-defaults = [None, 0, 1, SeedFinderConfigName.TrackML, DetectorName.ODD, SeedingAlgorithm.Default])
+Config = namedtuple('Config', ['mu', 'bucketSize', 'maxSeedsPerSpM', 'seedFinderConfig', 'detector', 'seedingAlgorithm', "metric", "AnnoySeed", "zBins", "phiBins"], 
+defaults = [None, 0, 1, SeedFinderConfigName.TrackML, DetectorName.generic, SeedingAlgorithm.HashingSeeding, "angular", 123456789, 0, 0])
 #https://stackoverflow.com/questions/34269772/type-hints-in-namedtuple
 Config.__annotations__ = {'mu': int, 'bucketSize': int, 'maxSeedsPerSpM': int, 'seedFinderConfig': SeedFinderConfigName, 
-'detector': DetectorName, 'seedingAlgorithm': SeedingAlgorithm}
+'detector': DetectorName, 'seedingAlgorithm': SeedingAlgorithm, "metric": str, "AnnoySeed": int, "zBins": int, "phiBins": int}
 
 # config = Config(mu=50, bucketSize=0, maxSeedsPerSpM=5, seedFinderConfig="cpp", detector=DetectorName.ODD)
 # config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=1, seedFinderConfig="TrackML", detector=DetectorName.generic, seedingAlgorithm=SeedingAlgorithm.HashingSeeding)
-config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=1, seedFinderConfig="TrackML", detector=DetectorName.generic, seedingAlgorithm=seedingAlgorithm)
+config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=maxSeedsPerSpM, seedFinderConfig="TrackML", detector=DetectorName.generic, 
+                seedingAlgorithm=seedingAlgorithm, metric=metric, AnnoySeed=AnnoySeed, zBins=zBins, phiBins=phiBins)
+# config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=1, seedFinderConfig="TrackML", detector=DetectorName.ODD, 
+#                 seedingAlgorithm=seedingAlgorithm, metric=metric, AnnoySeed=AnnoySeed, zBins=zBins)
+# config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=1, seedFinderConfig="TrackML", detector=DetectorName.generic, seedingAlgorithm=seedingAlgorithm)
+
+# config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=1000, seedFinderConfig="TrackML", detector=DetectorName.generic, 
+#                 seedingAlgorithm=seedingAlgorithm, metric=metric, AnnoySeed=AnnoySeed, zBins=zBins, phiBins=phiBins)
 
 actsExamplesDir = getActsExamplesDirectory()
 
@@ -116,8 +168,10 @@ elif config.detector == DetectorName.generic:
     detector, trackingGeometry, _ = acts.examples.GenericDetector.create()
     digiConfig = actsExamplesDir / "Algorithms/Digitization/share/default-smearing-config-generic.json"
     geoSelectionConfigFile = actsExamplesDir / "Algorithms/TrackFinding/share/geoSelection-genericDetector.json"
+else:
+    exit("Detector not supported")
 
-truthSeedRanges = TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-4, 4), nHits=(9, None))
+truthSeedRanges = TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-eta, eta), nHits=(9, None))
 
 CKFptMin = 1.0 * u.GeV
 
@@ -144,12 +198,30 @@ def get_dir_config(config:Config):
     outDir += f"_seedFinderConfig_{extractEnumName(config.seedFinderConfig)}"
 
     outDir += f"_seedingAlgorithm_{extractEnumName(config.seedingAlgorithm)}"
+    if doHashing:
+        if config.metric != "angular":
+            outDir += f"_metric_{extractEnumName(config.metric)}"
+        outDir += f"_AnnoySeed_{config.AnnoySeed}"
+        if config.zBins != 0:
+            outDir += f"_zBins_{config.zBins}"
+        if config.phiBins != 0:
+            outDir += f"_phiBins_{config.phiBins}"
     return outDir
 
 outDir = get_dir_config(config)
+# outDir += "_binned merge_1"
+# outDir += f"_eta_{eta}"
 print(outDir)
 
 outputDir = pathlib.Path.cwd() / outDir
+
+if not outputDir.exists():
+    outputDir.mkdir(parents=True)
+
+config_file = open(outputDir / "config_file.txt", "w")
+config_file.write(str(config))
+config_file.close()
+
 # acts.examples.dump_args_calls(locals())  # show python binding calls
 
 field = acts.ConstantBField(acts.Vector3(0.0, 0.0, 2.0 * u.T))
@@ -158,8 +230,8 @@ rnd = acts.examples.RandomNumbers(seed=42)
 # if config.bucketSize == 0:
 # s = acts.examples.Sequencer(events=5000, numThreads=1, outputDir=str(outputDir))
 # else:
-# s = acts.examples.Sequencer(events=1000, numThreads=1, outputDir=str(outputDir))
-s = acts.examples.Sequencer(events=10, numThreads=1, outputDir=str(outputDir))
+s = acts.examples.Sequencer(events=nevents, numThreads=1, outputDir=str(outputDir), enableEventTiming=True)
+# s = acts.examples.Sequencer(events=10, numThreads=1, outputDir=str(outputDir))
 # s = acts.examples.Sequencer(events=2, numThreads=1, outputDir=str(outputDir))
 
 addPythia8(
@@ -174,16 +246,16 @@ addPythia8(
     ),
     rnd=rnd,
     # outputDirRoot=outputDir,
-    # outputDirCsv=outputDir,
+    # outputDirCsv=outputDir if saveFiles else None,
 )
 
 addFatras(
     s,
     trackingGeometry,
     field,
-    ParticleSelectorConfig(eta=(-4.0, 4.0), pt=(150 * u.MeV, None), removeNeutral=True),
-    # outputDirRoot=outputDir,
-    # outputDirCsv=outputDir,
+    ParticleSelectorConfig(eta=(-eta, eta), pt=(150 * u.MeV, None), removeNeutral=True),
+    outputDirRoot=outputDir,
+    outputDirCsv=outputDir if saveFiles else None,
     rnd=rnd,
 )
 
@@ -192,8 +264,8 @@ addDigitization(
     trackingGeometry,
     field,
     digiConfigFile=digiConfig,
-    # outputDirRoot=outputDir,
-    # outputDirCsv=outputDir,
+    outputDirRoot=outputDir,
+    outputDirCsv=outputDir if saveFiles else None,
     rnd=rnd,
 )
 
@@ -296,6 +368,8 @@ seedingAlgorithm: SeedingAlgorithm = SeedingAlgorithm.Default
 particleSmearingSigmas: ParticleSmearingSigmas = ParticleSmearingSigmas()
 initialVarInflation: Optional[list] = None
 
+import numpy as np
+cotThetaMax = 1/(np.tan(2*np.arctan(np.exp(-eta))))# =1/tan(2×atan(e^(-eta)))
 if config.seedFinderConfig == "TrackML":
     # seedFinderConfigArg = SeedfinderConfigArg(
     #         r=(None, 200 * u.mm),  # rMin=default, 33mm
@@ -320,9 +394,12 @@ if config.seedFinderConfig == "TrackML":
             radLengthPerSeed=0.1,
             minPt=500 * u.MeV,
             impactMax=3 * u.mm,
-        )
+            cotThetaMax=cotThetaMax # =1/tan(2×atan(e^(-eta)))
+            # cotThetaMax = 1000, # Hashing better perfs with that; in SPGrid: float zBinSize = config.cotThetaMax * config.deltaRMax; 
+            # int zBins = max(1, (int)std::floor((config.zMax - config.zMin) / zBinSize))
+    )
 elif config.seedFinderConfig == "cpp":
-    seedFinderConfigArg = SeedFinderConfigArg(maxSeedsPerSpM=maxSeedsPerSpM)
+    seedFinderConfigArg = SeedFinderConfigArg(maxSeedsPerSpM=maxSeedsPerSpM, cotThetaMax=cotThetaMax)
 
 
 seedFinderOptionsArg: SeedFinderOptionsArg = SeedFinderOptionsArg(bFieldInZ=1.99724 * u.T)
@@ -366,6 +443,8 @@ if truthSeedRanges is not None:
 else:
     selectedParticles = inputParticles
 
+print(selectedParticles)
+
 # Create starting parameters from either particle smearing or combined seed
 # finding and track parameters estimation
 spAlg = acts.examples.SpacePointMaker(
@@ -380,13 +459,14 @@ spAlg = acts.examples.SpacePointMaker(
 )
 s.addAlgorithm(spAlg)
 
-# s.addWriter(
-#     acts.examples.CsvSpacepointWriter(
-#         level=customLogLevel(),
-#         inputSpacepoints="spacepoints",
-#         outputDir=str(outputDirRoot),
+# if saveFiles:
+#     s.addWriter(
+#         acts.examples.CsvSpacepointWriter(
+#             level=customLogLevel(),
+#             inputSpacepoints="spacepoints",
+#             outputDir=str(outputDirRoot),
+#         )
 #     )
-# )
 
 outputDirRoot = Path(outputDirRoot)
 if not outputDirRoot.exists():
@@ -399,13 +479,17 @@ s.addWriter(
     )
 )
 
+# s.config.logLevel = acts.logging.VERBOSE
 
 from typing import Optional, Union, List
 
 def addHashing(
     s: acts.examples.Sequencer,
     bucketSize: Optional[int]=10,
-    nBucketsLimit: Optional[int]=50,
+    AnnoySeed: Optional[int]=123456789,
+    zBins: Optional[int]=0,
+    phiBins: Optional[int]=100,
+    metric = HashingMetric.dphi,
 ) -> acts.examples.Sequencer:
     """This function steers the digitization step
 
@@ -425,18 +509,39 @@ def addHashing(
     if int(s.config.logLevel) <= int(acts.logging.DEBUG):
         acts.examples.dump_args_calls(locals())
 
+    f = 1
+    if metric == HashingMetric.dphi:
+        f = 1
+    elif metric == HashingMetric.dR:
+        f = 2
+
 
     # Hashing
+    hashingTrainingCfg = acts.examples.HashingTrainingAlgorithm.Config(
+        inputSpacePoints="spacepoints",
+        AnnoySeed=AnnoySeed,
+        f=f,
+    )
+
+    # addHashingTraining
+    hashingTrainingAlg = acts.examples.HashingTrainingAlgorithm(hashingTrainingCfg, 
+                                                                # acts.logging.VERBOSE
+                                                                s.config.logLevel
+                                                                )
+
+    s.addAlgorithm(hashingTrainingAlg)
+
     hashingCfg = acts.examples.HashingAlgorithm.Config(
-        inputClusters="None",
-        inputMeasurementParticlesMap="None",
-        inputHitIds="None",
-        inputSimHits="simhits",
         inputSpacePoints="spacepoints",
         bucketSize=bucketSize,
-        nBucketsLimit=nBucketsLimit,
+        zBins=zBins,
+        phiBins=phiBins,
     )
-    hashingAlg = acts.examples.HashingAlgorithm(hashingCfg, acts.logging.VERBOSE)#s.config.logLevel)
+
+    hashingAlg = acts.examples.HashingAlgorithm(hashingCfg, 
+                                                # acts.logging.VERBOSE
+                                                s.config.logLevel
+                                                )
 
     s.addAlgorithm(hashingAlg)
 
@@ -477,114 +582,26 @@ def mergeSeeds(
 
     return s
 
-def getMaxSpacepoints(s, nevents, npileup, particlesInput, outputDir, outputRoot, outputCsv):
-    from seeding import addSeeding, SeedingAlgorithm, TruthSeedRanges, ParticleSmearingSigmas, SeedfinderConfigArg, TrackParamsEstimationConfig
-    
-
-    s = s or acts.examples.Sequencer(
-        events=nevents, numThreads=-1, logLevel=acts.logging.INFO#DEBUG#INFO
-    )
-    simulation(s, npileup, particlesInput, outputDir, outputRoot, outputCsv)
-
-    inputParticles = "particles_initial"
-
-    truthSeedRanges = TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-3.0, 3.0), nHits=(9, None))
-    if truthSeedRanges is not None:
-        selAlg = acts.examples.TruthSeedSelector(
-            **acts.examples.defaultKWArgs(
-                ptMin=truthSeedRanges.pt[0],
-                ptMax=truthSeedRanges.pt[1],
-                etaMin=truthSeedRanges.eta[0],
-                etaMax=truthSeedRanges.eta[1],
-                nHitsMin=truthSeedRanges.nHits[0],
-                nHitsMax=truthSeedRanges.nHits[1],
-                rhoMin=truthSeedRanges.rho[0],
-                rhoMax=truthSeedRanges.rho[1],
-                zMin=truthSeedRanges.z[0],
-                zMax=truthSeedRanges.z[1],
-                phiMin=truthSeedRanges.phi[0],
-                phiMax=truthSeedRanges.phi[1],
-                absEtaMin=truthSeedRanges.absEta[0],
-                absEtaMax=truthSeedRanges.absEta[1],
-            ),
-            level=acts.logging.INFO,
-            inputParticles=inputParticles,
-            # inputMeasurementParticlesMap is inverted
-            inputMeasurementParticlesMap="measurement_particles_map",
-            outputParticles="truth_seeds_selected",
-        )
-        s.addAlgorithm(selAlg)
-        selectedParticles = selAlg.config.outputParticles
-    else:
-        selectedParticles = inputParticles
-
-    spAlg = acts.examples.SpacePointMaker(
-        level=acts.logging.INFO,
-        inputSourceLinks="sourcelinks",
-        inputMeasurements="measurements",
-        outputSpacePoints="spacepoints",
-        trackingGeometry=trackingGeometry,
-        geometrySelection=acts.examples.readJsonGeometryList(
-            str("/mustfs/LAPP-DATA/atlas/acts/software_hashing_python_lapp_inter/acts/Examples/Algorithms/TrackFinding/share/geoSelection-genericDetector.json")
-        ),
-    )
-    s.addAlgorithm(spAlg)
-
-    spacePointsMaxNum = acts.examples.SpacePointsMaxNumberCollector(
-        level=acts.logging.VERBOSE,
-        inputSpacePoints=spAlg.config.outputSpacePoints,
-    )
-    #s2 = deepcopy(s)
-    s.addWriter(spacePointsMaxNum)
-    s.run()
-    maxSpacepoints = spacePointsMaxNum.maxNSpacePoints
-    return maxSpacepoints
-
-
-nBucketsLimit = 1
 if doHashing:
-    maxSpacepoints = None
-    if maxSpacepoints is None and False:
-        """
-        spacePointsMaxNum = acts.examples.SpacePointsMaxNumberCollector(
-            level=acts.logging.VERBOSE,
-            inputSpacePoints=spAlg.config.outputSpacePoints,
-        )
-        #s2 = deepcopy(s)
-        s.addWriter(spacePointsMaxNum)
-        s.run()
-        """
-        maxSpacepoints = getMaxSpacepoints(None, nevents, npileup, particlesInput, outputDir, outputRoot, outputCsv)
-        print("maxSpacepoints:", maxSpacepoints)
-    else:
-        # to be determined
-        maxSpacepoints = 50 #muons
-        if npileup == 0:
-            maxSpacepoints = 2000 #tt mu0
-        elif npileup <= 50:
-            maxSpacepoints = 14000 #tt mu50
-        elif npileup <= 100:
-            maxSpacepoints = 26000 #tt mu100
-        elif npileup <= 200:
-            maxSpacepoints = 46000 #tt mu200
-    # maxSpacepoints = 679
-    nBucketsLimit = maxSpacepoints
-
     # for now hashing only use space points and not clusters
     print("***> addHashing")
     s = addHashing(
         s,
         bucketSize=bucketSize,
-        nBucketsLimit=nBucketsLimit,
+        AnnoySeed=AnnoySeed,
+        metric=config.metric,
+        zBins=zBins,
+        phiBins=phiBins,
     )
 
-    s.addWriter(
-        acts.examples.CsvBucketWriter(
-            level=customLogLevel(),
-            inputBuckets="buckets",
-            outputDir=str(outputDirRoot),
+    if saveFiles:
+        s.addWriter(
+            acts.examples.CsvBucketWriter(
+                level=customLogLevel(),
+                inputBuckets="buckets",
+                outputDir=str(outputDirRoot),
+            )
         )
-    )
 
 # Use seeding
 seedFinderConfig = acts.SeedFinderConfig(
@@ -705,6 +722,7 @@ gridConfig = acts.SpacePointGridConfig(
 if config.seedingAlgorithm == SeedingAlgorithm.Default:
     seedNames = []
     protoTrackNames = []
+    nBucketsLimit = 1
     for bucketNumber in range(nBucketsLimit):
         if doHashing:
             bucketSuffix = "{}".format(bucketNumber)
@@ -740,22 +758,20 @@ if config.seedingAlgorithm == SeedingAlgorithm.Default:
 elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
     # assert(doHashing)
     bucket_list = []
-    for bucketNumber in range(nBucketsLimit):
-        if doHashing:
-            bucketSuffix = "{}".format(bucketNumber)
-            bucketSP = "hashingSPBucket_{}".format(bucketNumber)
-        else:
-            bucketSuffix = ""
-            bucketSP = "spacepoints"
-        bucket_list.append(bucketSP)
-    logger.info("Using default seeding")
+    # if doHashing:
+    #     bucketSP = "hashingSPBucket_{}".format(0)
+    # else:
+    #     bucketSP = "spacepoints"
+    bucketSP = "buckets"
+    bucket_list.append(bucketSP)
+    logger.info("Using Hashing seeding")
 
     seedingAlg = acts.examples.SeedingAlgorithmHashing(
         level=customLogLevel(),
         # inputSpacePoints=[spAlg.config.outputSpacePoints],    
         inputSpacePoints=bucket_list,    
-        outputSeeds="seeds{}".format(bucketSuffix),
-        outputProtoTracks="prototracks{}".format(bucketSuffix),
+        outputSeeds="seeds",
+        outputProtoTracks="prototracks",
         **acts.examples.defaultKWArgs(
             allowSeparateRMax=seedingAlgorithmConfigArg.allowSeparateRMax,
             zBinNeighborsTop=seedingAlgorithmConfigArg.zBinNeighborsTop,
@@ -768,8 +784,6 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
         seedFinderOptions=seedFinderOptions,
     )
     s.addAlgorithm(seedingAlg)
-    if doHashing:
-        s = mergeSeeds(s, ["seeds{}".format(bucketSuffix)], ["prototracks{}".format(bucketSuffix),])
 elif config.seedingAlgorithm == SeedingAlgorithm.Orthogonal:
     logger.info("Using orthogonal seeding")
     # Use seeding
@@ -819,14 +833,14 @@ elif config.seedingAlgorithm == SeedingAlgorithm.Orthogonal:
     )
 
     
-    seedFinderOptions = SeedFinderOptionsArg(
-        **acts.examples.defaultKWArgs(
-            bFieldInZ=seedFinderOptionsArg.bFieldInZ,
-            beamPos=acts.Vector2(0.0, 0.0)
-            if seedFinderOptionsArg.beamPos == (None, None)
-            else seedFinderOptionsArg.beamPos,
-        )
-    )
+    # seedFinderOptions = SeedFinderOptionsArg(
+    #     **acts.examples.defaultKWArgs(
+    #         bFieldInZ=seedFinderOptionsArg.bFieldInZ,
+    #         beamPos=acts.Vector2(0.0, 0.0)
+    #         if seedFinderOptionsArg.beamPos == (None, None)
+    #         else seedFinderOptionsArg.beamPos,
+    #     )
+    # )
 
     seedFilterConfig = acts.SeedFilterConfig(
         **acts.examples.defaultKWArgs(
@@ -903,15 +917,15 @@ if outputDirRoot is not None:
     #     )
     # )
 
-    # s.addWriter(
-    #     acts.examples.SeedingPerformanceWriter(
-    #         level=customLogLevel(minLevel=acts.logging.DEBUG),
-    #         inputProtoTracks=inputProtoTracks,
-    #         inputParticles=selectedParticles,
-    #         inputMeasurementParticlesMap="measurement_particles_map",
-    #         filePath=str(outputDirRoot / "performance_seeding_hists.root"),
-    #     )
-    # )
+    s.addWriter(
+        acts.examples.SeedingPerformanceWriter(
+            level=customLogLevel(minLevel=acts.logging.DEBUG),
+            inputProtoTracks=inputProtoTracks,
+            inputParticles=selectedParticles,
+            inputMeasurementParticlesMap="measurement_particles_map",
+            filePath=str(outputDirRoot / "performance_seeding_hists.root"),
+        )
+    )
 
     # s.addWriter(
     #     acts.examples.RootTrackParameterWriter(
@@ -927,11 +941,20 @@ if outputDirRoot is not None:
     #     )
     # )
 
+    # if saveFiles:
+    #     s.addWriter(
+    #         acts.examples.CsvSimSeedWriter(
+    #             level=customLogLevel(),
+    #             inputSeeds=inputSeeds,
+    #             outputDir=str(outputDirRoot),
+    #         )
+    #     )
+
     s.addWriter(
-        acts.examples.CsvSimSeedWriter(
+        acts.examples.RootSeedWriter(
             level=customLogLevel(),
             inputSeeds=inputSeeds,
-            outputDir=str(outputDirRoot),
+            filePath=str(outputDirRoot / "seeds.root")
         )
     )
 
@@ -940,26 +963,26 @@ addCKFTracks(
     trackingGeometry,
     field,
     CKFPerformanceConfig(ptMin=1.0 * u.GeV, nMeasurementsMin=6),
-    TrackSelectorRanges(pt=(1.0 * u.GeV, None), absEta=(None, 4.0), removeNeutral=True),
+    TrackSelectorRanges(pt=(1.0 * u.GeV, None), absEta=(None, eta), removeNeutral=True),
     outputDirRoot=outputDir,
-    # outputDirCsv=outputDir,
+    # outputDirCsv=outputDir if saveFiles else None,
     writeTrajectories=False,
 )
 
 # write track summary from CKF
-trackSummaryWriter = acts.examples.RootTrajectorySummaryWriter(
-    level=customLogLevel(),
-    inputTrajectories="ckfTrajectories",
-    # @note The full particles collection is used here to avoid lots of warnings
-    # since the unselected CKF track might have a majority particle not in the
-    # filtered particle collection. This could be avoided when a seperate track
-    # selection algorithm is used.
-    inputParticles="particles_selected",
-    inputMeasurementParticlesMap="measurement_particles_map",
-    filePath=str(outputDirRoot / "tracksummary_ckf.root"),
-    treeName="tracksummary",
-)
-s.addWriter(trackSummaryWriter)
+# trackSummaryWriter = acts.examples.RootTrajectorySummaryWriter(
+#     level=customLogLevel(),
+#     inputTrajectories="ckfTrajectories",
+#     # @note The full particles collection is used here to avoid lots of warnings
+#     # since the unselected CKF track might have a majority particle not in the
+#     # filtered particle collection. This could be avoided when a seperate track
+#     # selection algorithm is used.
+#     inputParticles="particles_selected",
+#     inputMeasurementParticlesMap="measurement_particles_map",
+#     filePath=str(outputDirRoot / "tracksummary_ckf.root"),
+#     treeName="tracksummary",
+# )
+# s.addWriter(trackSummaryWriter)
 
 # addAmbiguityResolution(
 #     s,
