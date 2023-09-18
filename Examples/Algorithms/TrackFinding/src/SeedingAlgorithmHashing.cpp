@@ -12,7 +12,7 @@
 #include "Acts/Seeding/BinnedSPGroup.hpp"
 #include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
-#include "Acts/Seeding/SeedFinder.hpp"
+#include "Acts/Seeding/SeedFinderHashing.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
@@ -22,7 +22,7 @@
 
 ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
     ActsExamples::SeedingAlgorithmHashing::Config cfg, Acts::Logging::Level lvl)
-    : ActsExamples::BareAlgorithm("SeedingAlgorithm", lvl),
+    : ActsExamples::BareAlgorithm("SeedingAlgorithmHashing", lvl),
       m_cfg(std::move(cfg)) {
   if (m_cfg.inputSpacePoints.empty()) {
     throw std::invalid_argument("Missing space point input collections");
@@ -186,7 +186,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
       Acts::BinFinder<SimSpacePoint>(m_cfg.zBinNeighborsTop,
                                     m_cfg.numPhiNeighbors));
 
-  auto finder = Acts::SeedFinder<SimSpacePoint>(m_cfg.seedFinderConfig,
+  auto finder = Acts::SeedFinderHashing<SimSpacePoint>(m_cfg.seedFinderConfig,
                                                 m_cfg.seedFinderOptions);
 
   // covariance tool, extracts covariances per spacepoint as required
@@ -209,69 +209,104 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
   // pre-compute the maximum size required so we only need to allocate once
   // doesn't combine the input containers of space point pointers
   size_t maxNSpacePoints = 0, inSpacePoints = 0;
+  // for (const auto& isp : m_cfg.inputSpacePoints) {
+  //   inSpacePoints = ctx.eventStore.get<SimSpacePointContainer>(isp).size();
+  //   if (inSpacePoints > maxNSpacePoints){
+  //     maxNSpacePoints = inSpacePoints;
+  //   }
+  // }
   for (const auto& isp : m_cfg.inputSpacePoints) {
-    inSpacePoints = ctx.eventStore.get<SimSpacePointContainer>(isp).size();
-    if (inSpacePoints > maxNSpacePoints){
-      maxNSpacePoints = inSpacePoints;
+    for (const SimSpacePointContainer& bucket: ctx.eventStore.get<std::vector<SimSpacePointContainer>>(isp)){
+      inSpacePoints = bucket.size();
+      if (inSpacePoints > maxNSpacePoints){
+        maxNSpacePoints = inSpacePoints;
+      }
     }
   }
 
   static thread_local SimSeedContainer seeds;
+  static thread_local std::set<Acts::Seed<ActsExamples::SimSpacePoint>> seedsSet;
   seeds.clear();
-  static thread_local decltype(finder)::SeedingState state;
+  seedsSet.clear();
+  static thread_local decltype(finder)::SeedingStateHashing state;
 
   std::vector<const SimSpacePoint*> spacePointPtrs;
   //spacePointPtrs.reserve(nSpacePoints);
   spacePointPtrs.reserve(maxNSpacePoints);
   for (const auto& isp : m_cfg.inputSpacePoints) {
-    // construct the seeding tools
-    auto grid =
-        Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(m_cfg.gridConfig);
+    for (const SimSpacePointContainer& bucket: ctx.eventStore.get<std::vector<SimSpacePointContainer>>(isp)){
+      // construct the seeding tools
+      auto grid =
+          Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(m_cfg.gridConfig);
 
-    // spacePointPtrs corresponds to a bucket
-    spacePointPtrs.clear();
+      // spacePointPtrs corresponds to a bucket
+      spacePointPtrs.clear();
 
-    // is there a way to store the pointers only once?
-    for (const auto& spacePoint :
-         ctx.eventStore.get<SimSpacePointContainer>(isp)) {
-      // since the event store owns the space points, their pointers should be
-      // stable and we do not need to create local copies.
-      spacePointPtrs.push_back(&spacePoint);
+      // is there a way to store the pointers only once?
+      for (const auto& spacePoint :
+          bucket) {
+        // since the event store owns the space points, their pointers should be
+        // stable and we do not need to create local copies.
+        spacePointPtrs.push_back(&spacePoint);
+      }
+
+      // extent used to store r range for middle spacepoint
+      Acts::Extent rRangeSPExtent;
+      // groups spacepoints
+      // could be moved before the space point containers loop if is updated dynamically 
+      auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
+        spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
+        bottomBinFinder, topBinFinder, std::move(grid), rRangeSPExtent,
+        m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
+
+      // variable middle SP radial region of interest
+      const Acts::Range1D<float> rMiddleSPRange(
+          std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
+              m_cfg.seedFinderConfig.deltaRMiddleMinSPRange,
+          std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2 -
+              m_cfg.seedFinderConfig.deltaRMiddleMaxSPRange);
+
+      // run the seeding
+      auto group = spacePointsGrouping.begin(); // could be done before the loop?
+      auto groupEnd = spacePointsGrouping.end();
+      // if add middle space point -> need to skip compat with previous tops and bottoms
+      // [middle, top] done pairs if no new bottom
+      // [bottom, middle, top] pairs other wise
+
+      // [middle] not done for new middles
+      // [middle, top] of not done pairs for new tops
+      // [middle, top, bottom] for new bottoms
+
+      // if add top space point -> need to skip compat with previous middle and bottoms
+      // if add bottom space point -> need to skip compat with previous middle and tops
+      // for (; !(group == groupEnd); ++group) {
+      //   finder.createSeedsForGroup(state, std::back_inserter(seeds), group.bottom(),
+      //                             group.middle(), group.top(), rMiddleSPRange);
+      // }
+      // for (; !(group == groupEnd); ++group) {
+      //   finder.createSeedsForGroup(state, std::inserter(seedsSet, seedsSet.begin()), group.bottom(),
+      //                             group.middle(), group.top(), rMiddleSPRange);
+      // }
+      for (; !(group == groupEnd); ++group) {
+        finder.createSeedsForGroup(state, std::inserter(seedsSet, seedsSet.end()), group.bottom(),
+                                  group.middle(), group.top(), rMiddleSPRange);
+      }
+      // for (; !(group == groupEnd); ++group) {
+      //   finder.createSeedsForGroup(state, std::inserter(seeds, seeds.end()), group.bottom(),
+      //                             group.middle(), group.top(), rMiddleSPRange);
+      // }
     }
+  }
 
-    // extent used to store r range for middle spacepoint
-    Acts::Extent rRangeSPExtent;
-    // groups spacepoints
-    // could be moved before the space point containers loop if is updated dynamically 
-    auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
-      spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
-      bottomBinFinder, topBinFinder, std::move(grid), rRangeSPExtent,
-      m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
+  ACTS_INFO("CheckedBad bottom " << state.checkedBadCompatBottomSPSet.size() << " Checked bottom "
+                        << state.checkedCompatBottomSPSet.size() << " nBadBottomSkip " << state.nBadBottomSkip << " nBottomSkip " << state.nBottomSkip);
+  ACTS_INFO("CheckedBad top " << state.checkedBadCompatTopSPSet.size() << " Checked top "
+                        << state.checkedCompatTopSPSet.size() << " nBadTopSkip " << state.nBadTopSkip << " nTopSkip " << state.nTopSkip);
+  ACTS_INFO("Checked seeds " << state.checkedCompatSeedSet.size() << " nSeedsSkip " << state.nSeedsSkip);
 
-    // variable middle SP radial region of interest
-    const Acts::Range1D<float> rMiddleSPRange(
-        std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
-            m_cfg.seedFinderConfig.deltaRMiddleMinSPRange,
-        std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2 -
-            m_cfg.seedFinderConfig.deltaRMiddleMaxSPRange);
-
-    // run the seeding
-    auto group = spacePointsGrouping.begin(); // could be done before the loop?
-    auto groupEnd = spacePointsGrouping.end();
-    // if add middle space point -> need to skip compat with previous tops and bottoms
-    // [middle, top] done pairs if no new bottom
-    // [bottom, middle, top] pairs other wise
-
-    // [middle] not done for new middles
-    // [middle, top] of not done pairs for new tops
-    // [middle, top, bottom] for new bottoms
-
-    // if add top space point -> need to skip compat with previous middle and bottoms
-    // if add bottom space point -> need to skip compat with previous middle and tops
-    for (; !(group == groupEnd); ++group) {
-      finder.createSeedsForGroup(state, std::back_inserter(seeds), group.bottom(),
-                                group.middle(), group.top(), rMiddleSPRange);
-    }
+  seeds.clear();
+  for (const auto& seed : seedsSet) {
+    seeds.push_back(seed);
   }
 
   // extract proto tracks, i.e. groups of measurement indices, from tracks seeds
@@ -291,7 +326,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
     }
   }
 
-  ACTS_DEBUG("Created " << seeds.size() << " track seeds from "
+  ACTS_INFO("Created " << seeds.size() << " track seeds from "
                         << spacePointPtrs.size() << " space points");
 
   ctx.eventStore.add(m_cfg.outputSeeds, SimSeedContainer{seeds});
