@@ -183,8 +183,16 @@ else()
   target_sources(ActsPythonBindings PRIVATE src/OnnxNeuralCalibratorStub.cpp)
 endif()
 
-target_link_libraries(ActsPythonBindings PUBLIC ActsExamplesHashing)
-target_sources(ActsPythonBindings PRIVATE src/Hashing.cpp)
+if(ACTS_BUILD_EXAMPLES_HASHING)
+  target_link_libraries(ActsPythonBindings PUBLIC ActsExamplesHashing)
+  target_sources(ActsPythonBindings PRIVATE src/Hashing.cpp)
+
+  target_link_libraries(ActsPythonBindings PUBLIC ActsExamplesHashingTraining)
+  target_sources(ActsPythonBindings PRIVATE src/HashingTraining.cpp)
+else()
+  target_sources(ActsPythonBindings PRIVATE src/HashingStub.cpp)
+  target_sources(ActsPythonBindings PRIVATE src/HashingTrainingStub.cpp)
+endif()
 
 target_link_libraries(ActsPythonBindings PUBLIC ActsExamplesHashing)
 target_sources(ActsPythonBindings PRIVATE src/Hashing.cpp)

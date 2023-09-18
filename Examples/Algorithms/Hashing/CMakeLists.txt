@@ -16,18 +16,18 @@ install(
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 add_library(
-  ActsExamplesMergeSeeds SHARED 
-  src/MergeSeedsAlgorithm.cpp)
+  ActsExamplesHashingTraining SHARED 
+  src/HashingTraining.cpp)
 
 target_include_directories(
-  ActsExamplesMergeSeeds
+  ActsExamplesHashingTraining
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 target_link_libraries(
-  ActsExamplesMergeSeeds
+  ActsExamplesHashingTraining
   PUBLIC ActsCore ActsExamplesFramework Boost::program_options)
 
 install(
-  TARGETS ActsExamplesMergeSeeds
+  TARGETS ActsExamplesHashingTraining
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
