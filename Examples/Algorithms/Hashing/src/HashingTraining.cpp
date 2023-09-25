@@ -13,7 +13,7 @@
 
 ActsExamples::HashingTrainingAlgorithm::HashingTrainingAlgorithm(
     const ActsExamples::HashingTrainingAlgorithm::Config& cfg, Acts::Logging::Level level)
-    : BareAlgorithm("HashingTrainingAlgorithm", level), m_cfg(cfg) {
+    : IAlgorithm("HashingTrainingAlgorithm", level), m_cfg(cfg) {
   if (m_cfg.f <= 0) {
     throw std::invalid_argument("Invalid f, f must be positive");
   }

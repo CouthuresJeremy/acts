@@ -22,7 +22,7 @@
 
 ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
     ActsExamples::SeedingAlgorithmHashing::Config cfg, Acts::Logging::Level lvl)
-    : ActsExamples::BareAlgorithm("SeedingAlgorithmHashing", lvl),
+    : ActsExamples::IAlgorithm("SeedingAlgorithmHashing", lvl),
       m_cfg(std::move(cfg)) {
   if (m_cfg.inputSpacePoints.empty()) {
     throw std::invalid_argument("Missing space point input collections");

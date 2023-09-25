@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "ActsExamples/Framework/BareAlgorithm.hpp"
+#include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/EventData/SimSpacePoint.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
 
@@ -21,7 +21,7 @@
 namespace ActsExamples {
 
 /// Print hits within some geometric region-of-interest.
-class HashingTrainingAlgorithm final : public BareAlgorithm {
+class HashingTrainingAlgorithm final : public IAlgorithm {
 // class HashingTrainingAlgorithm {
  public:
   struct Config {

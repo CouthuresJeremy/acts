@@ -27,7 +27,7 @@
 
 ActsExamples::HashingAlgorithm::HashingAlgorithm(
     const ActsExamples::HashingAlgorithm::Config& cfg, Acts::Logging::Level level)
-    : BareAlgorithm("HashingAlgorithm", level), m_cfg(cfg) {
+    : IAlgorithm("HashingAlgorithm", level), m_cfg(cfg) {
   if (m_cfg.bucketSize <= 0) {
     throw std::invalid_argument("Invalid bucket size");
   }
