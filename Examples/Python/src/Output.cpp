@@ -23,7 +23,6 @@
 #include "ActsExamples/Io/Csv/CsvSimHitWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvSpacepointWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvTrackParameterWriter.hpp"
-#include "ActsExamples/Io/Csv/CsvTrackWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvSimSeedWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvBucketWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvTrackingGeometryWriter.hpp"
@@ -371,7 +370,7 @@ void addOutput(Context& ctx) {
   ACTS_PYTHON_DECLARE_WRITER(ActsExamples::CsvSpacepointWriter, mex,
                              "CsvSpacepointWriter", inputSpacepoints, outputDir,
                              outputPrecision);
-
+                              
   ACTS_PYTHON_DECLARE_WRITER(ActsExamples::CsvSimSeedWriter, mex,
                               "CsvSimSeedWriter", inputSeeds, outputDir,
                               outputPrecision);
