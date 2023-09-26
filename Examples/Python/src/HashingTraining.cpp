@@ -24,27 +24,32 @@ namespace Acts::Python {
 void addHashingTraining(Context& ctx) {
   auto mex = ctx.get("examples");
 
-  {
-    using Alg = ActsExamples::HashingTrainingAlgorithm;
-    using Config = Alg::Config;
 
-    auto alg =
-        py::class_<ActsExamples::HashingTrainingAlgorithm, ActsExamples::BareAlgorithm,
-                   std::shared_ptr<ActsExamples::HashingTrainingAlgorithm>>(
-            mex, "HashingTrainingAlgorithm")
-            .def(py::init<const Config&, Acts::Logging::Level>(),
-                 py::arg("config"), py::arg("level"))
-            .def_property_readonly("config",
-                                   &ActsExamples::HashingTrainingAlgorithm::config);
+  ACTS_PYTHON_DECLARE_ALGORITHM(
+      ActsExamples::HashingTrainingAlgorithm, mex, "HashingTrainingAlgorithm", inputSpacePoints,
+      AnnoySeed, f);
 
-    auto c = py::class_<Config>(alg, "Config").def(py::init<>());
+  // {
+  //   using Alg = ActsExamples::HashingTrainingAlgorithm;
+  //   using Config = Alg::Config;
 
-    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
-    ACTS_PYTHON_MEMBER(inputSpacePoints);
-    ACTS_PYTHON_MEMBER(AnnoySeed);
-    ACTS_PYTHON_MEMBER(f);
-    ACTS_PYTHON_STRUCT_END();
-  }
+  //   auto alg =
+  //       py::class_<ActsExamples::HashingTrainingAlgorithm, ActsExamples::BareAlgorithm,
+  //                  std::shared_ptr<ActsExamples::HashingTrainingAlgorithm>>(
+  //           mex, "HashingTrainingAlgorithm")
+  //           .def(py::init<const Config&, Acts::Logging::Level>(),
+  //                py::arg("config"), py::arg("level"))
+  //           .def_property_readonly("config",
+  //                                  &ActsExamples::HashingTrainingAlgorithm::config);
+
+  //   auto c = py::class_<Config>(alg, "Config").def(py::init<>());
+
+  //   ACTS_PYTHON_STRUCT_BEGIN(c, Config);
+  //   ACTS_PYTHON_MEMBER(inputSpacePoints);
+  //   ACTS_PYTHON_MEMBER(AnnoySeed);
+  //   ACTS_PYTHON_MEMBER(f);
+  //   ACTS_PYTHON_STRUCT_END();
+  // }
 
 }
 

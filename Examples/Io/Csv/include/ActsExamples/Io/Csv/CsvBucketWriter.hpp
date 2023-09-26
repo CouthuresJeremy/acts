@@ -1,6 +1,6 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2021 CERN for the benefit of the Acts project
+// Copyright (C) 2023 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,13 +27,13 @@
 
 namespace ActsExamples {
 
-/// @class CsvSpacePointWriter
+/// @class CsvBucketWriter
 ///
 /// This writes one file per event containing information about the
-/// spacepoints
+/// buckets
 ///
-///     event000000001-spacepoint.csv
-///     event000000002-spacepoint.csv
+///     event000000001-buckets.csv
+///     event000000002-buckets.csv
 ///     ...
 ///
 /// Intrinsically thread-safe as one file per event.
@@ -54,10 +54,10 @@ class CsvBucketWriter final : public WriterT<std::vector<SimSpacePointContainer>
   CsvBucketWriter(const Config& config, Acts::Logging::Level level);
 
   /// Virtual destructor
-  ~CsvBucketWriter() final override;
+  ~CsvBucketWriter() override;
 
   /// End-of-run hook
-  ProcessCode endRun() final override;
+  ProcessCode finalize() override;
   
   /// Get readonly access to the config parameters
   const Config& config() const { return m_cfg; }
@@ -67,10 +67,9 @@ class CsvBucketWriter final : public WriterT<std::vector<SimSpacePointContainer>
   /// and is called by the WriterT<>::write interface
   ///
   /// @param ctx The Algorithm context with per event information
-  /// @param spacepoints is the data to be written out
+  /// @param buckets is the data to be written out
   ProcessCode writeT(const AlgorithmContext& ctx,
-                     //const SimSpacePointContainer& bucket) final override;
-                     const std::vector<SimSpacePointContainer>& buckets) final override;
+                     const std::vector<SimSpacePointContainer>& buckets) override;
 
  private:
   Config m_cfg;

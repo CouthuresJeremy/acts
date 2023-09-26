@@ -9,26 +9,30 @@
 #pragma once
 
 #include "ActsExamples/Framework/IAlgorithm.hpp"
+#include "ActsExamples/Framework/DataHandle.hpp"
+#include "ActsExamples/EventData/SimSpacePoint.hpp"
+#include "ActsExamples/Framework/ProcessCode.hpp"
+
+#include "ActsExamples/Hashing/kissrandom.h"
+#include "ActsExamples/Hashing/annoylib_custom.h"
 
 #include <cstddef>
 #include <string>
 
 namespace ActsExamples {
 
+using AnnoyMetric = Annoy::AngularEuclidean;
+using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
+                  Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
+
 /// Print hits within some geometric region-of-interest.
 class HashingAlgorithm final : public IAlgorithm {
  public:
   struct Config {
-    /// Input cluster collection.
-    std::string inputClusters;
-    /// Input hit-particles map.
-    std::string inputMeasurementParticlesMap;
-    /// Input hit id collection
-    std::string inputHitIds;
-    /// Input simulated hit collection
-    std::string inputSimHits;
     /// Input space points collection
     std::string inputSpacePoints;
+    // /// Input space points collections
+    // std::vector<std::string> inputSpacePoints;
     /// Size of the buckets = number of hits in the bucket
     unsigned int bucketSize = 10;
 
@@ -36,6 +40,9 @@ class HashingAlgorithm final : public IAlgorithm {
     unsigned int zBins = 0;
     /// Number of phiBins
     unsigned int phiBins = 50;
+
+    /// Output bucket collection.
+    std::string outputBuckets;
   };
 
   HashingAlgorithm(const Config& cfg, Acts::Logging::Level level);
@@ -47,6 +54,15 @@ class HashingAlgorithm final : public IAlgorithm {
 
  private:
   Config m_cfg;
+
+  // std::vector<std::unique_ptr<ReadDataHandle<SimSpacePointContainer>>>
+  //     m_inputSpacePoints{};
+    
+  ReadDataHandle<SimSpacePointContainer> m_inputSpacePoints{this, "inputSpacePoints"};
+
+  ReadDataHandle<AnnoyModel> m_inputAnnoyModel{this, "OutputAnnoyModel"};
+
+  WriteDataHandle<std::vector<SimSpacePointContainer>> m_outputBuckets{this, "OutputBuckets"};
 };
 
 }  // namespace ActsExamples

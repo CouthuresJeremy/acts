@@ -31,13 +31,36 @@ ActsExamples::HashingAlgorithm::HashingAlgorithm(
   if (m_cfg.bucketSize <= 0) {
     throw std::invalid_argument("Invalid bucket size");
   }
+  if (m_cfg.inputSpacePoints.empty()) {
+    throw std::invalid_argument("Missing space point input collections");
+  }
+
+  m_inputSpacePoints.initialize(m_cfg.inputSpacePoints);
+
+  // for (const auto& spName : m_cfg.inputSpacePoints) {
+  //   if (spName.empty()) {
+  //     throw std::invalid_argument("Invalid space point input collection");
+  //   }
+
+  //   auto& handle = m_inputSpacePoints.emplace_back(
+  //       std::make_unique<ReadDataHandle<SimSpacePointContainer>>(
+  //           this,
+  //           "InputSpacePoints#" + std::to_string(m_inputSpacePoints.size())));
+  //   handle->initialize(spName);
+  // }
+  if (m_cfg.outputBuckets.empty()) {
+    throw std::invalid_argument("Missing buckets output collection");
+  }
+
+  m_outputBuckets.initialize(m_cfg.outputBuckets);
 }
 
 ActsExamples::ProcessCode ActsExamples::HashingAlgorithm::execute(
     const ActsExamples::AlgorithmContext& ctx) const {
 
-  const auto& spacePoints =
-      ctx.eventStore.get<SimSpacePointContainer>(m_cfg.inputSpacePoints);
+  // const auto& spacePoints =
+  //     ctx.eventStore.get<SimSpacePointContainer>(m_cfg.inputSpacePoints);
+  const auto& spacePoints = m_inputSpacePoints(ctx);
 
   const size_t nSpacePoints = spacePoints.size();
 
@@ -57,7 +80,8 @@ ActsExamples::ProcessCode ActsExamples::HashingAlgorithm::execute(
   using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
                     Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
 
-  const auto& annoyModel = ctx.eventStore.get<AnnoyModel>("annoyModel");
+  // const auto& annoyModel = ctx.eventStore.get<AnnoyModel>("annoyModel");
+  const auto& annoyModel = m_inputAnnoyModel(ctx);
 
   ACTS_DEBUG("annoyModel loaded seed:" << annoyModel.get_seed());
   ACTS_DEBUG("bucketSize:" << bucketSize);
@@ -90,7 +114,7 @@ ActsExamples::ProcessCode ActsExamples::HashingAlgorithm::execute(
     }
     buckets.push_back(bucket);
   }
-  ctx.eventStore.add("buckets", std::move(buckets));
+  m_outputBuckets(ctx, std::move(buckets));
 
   return ProcessCode::SUCCESS;
 }

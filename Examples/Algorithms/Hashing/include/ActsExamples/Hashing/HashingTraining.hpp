@@ -9,6 +9,7 @@
 #pragma once
 
 #include "ActsExamples/Framework/IAlgorithm.hpp"
+#include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/EventData/SimSpacePoint.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
 
@@ -19,6 +20,10 @@
 #include <string>
 
 namespace ActsExamples {
+
+using AnnoyMetric = Annoy::AngularEuclidean;
+using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
+                  Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
 
 /// Print hits within some geometric region-of-interest.
 class HashingTrainingAlgorithm final : public IAlgorithm {
@@ -52,6 +57,13 @@ class HashingTrainingAlgorithm final : public IAlgorithm {
 
  private:
   Config m_cfg;
+
+  // std::vector<std::unique_ptr<ReadDataHandle<SimSpacePointContainer>>>
+  //     m_inputSpacePoints{};
+    
+  ReadDataHandle<SimSpacePointContainer> m_inputSpacePoints{this, "inputSpacePoints"};
+
+  WriteDataHandle<AnnoyModel> m_outputAnnoyModel{this, "OutputAnnoyModel"};
 };
 
 }  // namespace ActsExamples

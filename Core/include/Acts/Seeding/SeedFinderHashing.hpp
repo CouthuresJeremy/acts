@@ -1,6 +1,6 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2018 CERN for the benefit of the Acts project
+// Copyright (C) 2023 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,13 +9,22 @@
 #pragma once
 
 #include "Acts/Definitions/Units.hpp"
+#include "Acts/EventData/SpacePointData.hpp"
 #include "Acts/Geometry/Extent.hpp"
+#include "Acts/Seeding/CandidatesForMiddleSp.hpp"
 #include "Acts/Seeding/InternalSeed.hpp"
 #include "Acts/Seeding/InternalSpacePoint.hpp"
+#include "Acts/Seeding/Neighbour.hpp"
+#include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SeedFinderUtils.hpp"
+#include "Acts/Seeding/SpacePointGrid.hpp"
+
+// needed for the enum classes
+#include "Acts/Seeding/SeedFinder.hpp"
 
 #include <array>
+#include <limits>
 #include <list>
 #include <map>
 #include <memory>
@@ -25,6 +34,10 @@
 #include <vector>
 
 namespace Acts {
+
+// enum class SpacePointCandidateType : short { eBottom, eTop };
+
+// enum class DetectorMeasurementInfo : short { eDefault, eDetailed };
 
 template <typename external_spacepoint_t, typename platform_t = void*>
 class SeedFinderHashing {
@@ -44,49 +57,43 @@ class SeedFinderHashing {
     std::vector<LinCircle> linCircleTop;
 
     // create vectors here to avoid reallocation in each loop
-    std::vector<InternalSpacePoint<external_spacepoint_t>*> topSpVec;
+    std::vector<const InternalSpacePoint<external_spacepoint_t>*> topSpVec;
     std::vector<float> curvatures;
     std::vector<float> impactParameters;
-    std::vector<float> etaVec;
-    std::vector<float> ptVec;
 
-    std::vector<std::pair<
-        float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>
-        seedsPerSpM;
+    // managing seed candidates for SpM
+    CandidatesForMiddleSp<const InternalSpacePoint<external_spacepoint_t>>
+        candidates_collector;
 
-    std::set<std::pair<InternalSpacePoint<external_spacepoint_t>, InternalSpacePoint<external_spacepoint_t>>> checkedCompatTopSPSet;
-    std::set<std::pair<InternalSpacePoint<external_spacepoint_t>, InternalSpacePoint<external_spacepoint_t>>> checkedBadCompatTopSPSet;
-    std::set<std::pair<InternalSpacePoint<external_spacepoint_t>, InternalSpacePoint<external_spacepoint_t>>> checkedCompatBottomSPSet;
-    std::set<std::pair<InternalSpacePoint<external_spacepoint_t>, InternalSpacePoint<external_spacepoint_t>>> checkedBadCompatBottomSPSet;
+    // managing doublet candidates
+    boost::container::small_vector<Acts::Neighbour<external_spacepoint_t>, 9>
+        bottomNeighbours;
+    boost::container::small_vector<Acts::Neighbour<external_spacepoint_t>, 9>
+        topNeighbours;
 
-    // std::set<std::pair<InternalSpacePoint<external_spacepoint_t>, std::pair<InternalSpacePoint<external_spacepoint_t>, InternalSpacePoint<external_spacepoint_t>> >> checkedCompatSeedSet;
-    // std::set<std::pair<unsigned int, std::pair<InternalSpacePoint<external_spacepoint_t>, InternalSpacePoint<external_spacepoint_t>> >> checkedCompatSeedSet;
-    std::set<Seed<external_spacepoint_t>> checkedCompatSeedSet;
-
-    int nBadBottomSkip = 0;
-    int nBottomSkip = 0;
-    int nBadTopSkip = 0;
-    int nTopSkip = 0;
-    int nSeedsSkip = 0;
+    // Adding space point info
+    Acts::SpacePointData spacePointData;
   };
 
   /// The only constructor. Requires a config object.
-  /// @param config the configuration for the SeedFinder
-  /// @param options frequently changing configuration (like beam position)
-  SeedFinderHashing(Acts::SeedFinderConfig<external_spacepoint_t> config,
-             const Acts::SeedFinderOptions& options);
+  /// @param config the configuration for the SeedFinderHashing
+  SeedFinderHashing(
+      const Acts::SeedFinderConfig<external_spacepoint_t>& config);
   ~SeedFinderHashing() = default;
   /**    @name Disallow default instantiation, copy, assignment */
   //@{
-  SeedFinderHashing() = delete;
-  SeedFinderHashing(const SeedFinderHashing<external_spacepoint_t, platform_t>&) = delete;
-  SeedFinderHashing<external_spacepoint_t, platform_t>& operator=(
+  SeedFinderHashing() = default;
+  SeedFinderHashing(
       const SeedFinderHashing<external_spacepoint_t, platform_t>&) = delete;
+  SeedFinderHashing<external_spacepoint_t, platform_t>& operator=(
+      const SeedFinderHashing<external_spacepoint_t, platform_t>&) = default;
   //@}
 
   /// Create all seeds from the space points in the three iterators.
   /// Can be used to parallelize the seed creation
+  /// @param options frequently changing configuration (like beam position)
   /// @param state State object that holds memory used
+  /// @param grid The grid with space points
   /// @param outIt Output iterator for the seeds in the group
   /// @param bottomSPs group of space points to be used as innermost SP in a seed.
   /// @param middleSPs group of space points to be used as middle SP in a seed.
@@ -94,12 +101,22 @@ class SeedFinderHashing {
   /// @param rMiddleSPRange range object containing the minimum and maximum r for middle SP for a certain z bin.
   /// @note Ranges must return pointers.
   /// @note Ranges must be separate objects for each parallel call.
-  template <template <typename...> typename iterator_t, template <typename...> typename container_t, typename sp_range_t>
+  template <template <typename...> typename iterator_t,
+            template <typename...> typename container_t, typename sp_range_t>
   void createSeedsForGroup(
-      SeedingStateHashing& state,
+      const Acts::SeedFinderOptions& options, SeedingStateHashing& state,
+      const Acts::SpacePointGrid<external_spacepoint_t>& grid,
       iterator_t<container_t<Seed<external_spacepoint_t>>> outIt,
-      sp_range_t bottomSPs, sp_range_t middleSPs, sp_range_t topSPs,
+      const sp_range_t& bottomSPs, const std::size_t middleSPs,
+      const sp_range_t& topSPs,
       const Acts::Range1D<float>& rMiddleSPRange) const;
+  // template <template <typename...> typename container_t, typename sp_range_t>
+  // void createSeedsForGroup(
+  //     const Acts::SeedFinderOptions& options, SeedingState& state,
+  //     const Acts::SpacePointGrid<external_spacepoint_t>& grid,
+  //     std::back_insert_iterator<container_t<Seed<external_spacepoint_t>>>
+  //     outIt, const sp_range_t& bottomSPs, const std::size_t middleSPs, const
+  //     sp_range_t& topSPs, const Acts::Range1D<float>& rMiddleSPRange) const;
 
   /// @brief Compatibility method for the new-style seed finding API.
   ///
@@ -113,18 +130,70 @@ class SeedFinderHashing {
   /// require backwards-compatibility.
   ///
   /// @tparam sp_range_t container type for the seed point collections.
+  /// @param options frequently changing configuration (like beam position)
+  /// @param grid The grid with space points
   /// @param bottomSPs group of space points to be used as innermost SP in a
   /// seed.
   /// @param middleSPs group of space points to be used as middle SP in a seed.
   /// @param topSPs group of space points to be used as outermost SP in a seed.
   /// @returns a vector of seeds.
-  template <typename sp_range_t>
-  std::vector<Seed<external_spacepoint_t>> createSeedsForGroup(
-      sp_range_t bottomSPs, sp_range_t middleSPs, sp_range_t topSPs) const;
+  template <template <typename...> typename container_t, typename sp_range_t>
+  container_t<Seed<external_spacepoint_t>> createSeedsForGroup(
+      const Acts::SeedFinderOptions& options,
+      const Acts::SpacePointGrid<external_spacepoint_t>& grid,
+      const sp_range_t& bottomSPs, const std::size_t middleSPs,
+      const sp_range_t& topSPs) const;
+  // template <typename sp_range_t>
+  // std::vector<Seed<external_spacepoint_t>> createSeedsForGroup(
+  //     const Acts::SeedFinderOptions& options,
+  //     const Acts::SpacePointGrid<external_spacepoint_t>& grid,
+  //     const sp_range_t& bottomSPs, const std::size_t middleSPs,
+  //     const sp_range_t& topSPs) const;
+
+ private:
+  /// Iterates over dublets and tests the compatibility between them by applying
+  /// a series of cuts that can be tested with only two SPs
+  /// @param spacePointData object containing the spacepoint data
+  /// @param options frequently changing configuration (like beam position)
+  /// @param grid spacepoint grid
+  /// @param otherSPsNeighbours inner or outer space points to be used in the dublet
+  /// @param mediumSP space point candidate to be used as middle SP in a seed
+  /// @param linCircleVec vector containing inner or outer SP parameters after reference frame transformation to the u-v space
+  /// @param outVec Output object containing top or bottom SPs that are compatible with a certain middle SPs
+  /// @param deltaRMinSP minimum allowed r-distance between dublet components
+  /// @param deltaRMaxSP maximum allowed r-distance between dublet components
+  /// @param uIP minus one over radius of middle SP
+  /// @param uIP2 square of uIP
+  /// @param cosPhiM ratio between middle SP x position and radius
+  /// @param sinPhiM ratio between middle SP y position and radius
+  template <Acts::SpacePointCandidateType candidateType, typename out_range_t>
+  void getCompatibleDoublets(
+      Acts::SpacePointData& spacePointData,
+      const Acts::SeedFinderOptions& options,
+      const Acts::SpacePointGrid<external_spacepoint_t>& grid,
+      boost::container::small_vector<Neighbour<external_spacepoint_t>, 9>&
+          otherSPsNeighbours,
+      const InternalSpacePoint<external_spacepoint_t>& mediumSP,
+      std::vector<LinCircle>& linCircleVec, out_range_t& outVec,
+      const float deltaRMinSP, const float deltaRMaxSP, const float uIP,
+      const float uIP2, const float cosPhiM, const float sinPhiM) const;
+
+  /// Iterates over the seed candidates tests the compatibility between three
+  /// SPs and calls for the seed confirmation
+  /// @param spacePointData object containing the spacepoint data
+  /// @param SpM space point candidate to be used as middle SP in a seed
+  /// @param options frequently changing configuration (like beam position)
+  /// @param seedFilterState State object that holds memory used in SeedFilter
+  /// @param state State object that holds memory used
+  template <Acts::DetectorMeasurementInfo detailedMeasurement>
+  void filterCandidates(Acts::SpacePointData& spacePointData,
+                        const InternalSpacePoint<external_spacepoint_t>& SpM,
+                        const Acts::SeedFinderOptions& options,
+                        SeedFilterState& seedFilterState,
+                        SeedingStateHashing& state) const;
 
  private:
   Acts::SeedFinderConfig<external_spacepoint_t> m_config;
-  Acts::SeedFinderOptions m_options;
 };
 
 }  // namespace Acts

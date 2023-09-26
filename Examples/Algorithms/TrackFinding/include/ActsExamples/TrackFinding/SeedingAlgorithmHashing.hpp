@@ -10,15 +10,30 @@
 
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/SeedFilterConfig.hpp"
+#include "Acts/Seeding/SeedFinderHashing.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
+#include "Acts/Utilities/Logger.hpp"
+#include "ActsExamples/EventData/ProtoTrack.hpp"
+#include "ActsExamples/EventData/SimSeed.hpp"
 #include "ActsExamples/EventData/SimSpacePoint.hpp"
+#include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
+#include "ActsExamples/Framework/ProcessCode.hpp"
 
+#include <algorithm>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ActsExamples {
+template <typename external_spacepoint_t>
+class BinFinder;
+}  // namespace Acts
+
+namespace ActsExamples {
+struct AlgorithmContext;
 
 /// Construct track seeds from space points.
 class SeedingAlgorithmHashing final : public IAlgorithm {
@@ -33,20 +48,19 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
     std::vector<std::string> inputSpacePoints;
     /// Output track seed collection.
     std::string outputSeeds;
-    /// Output proto track collection.
-    std::string outputProtoTracks;
 
     Acts::SeedFilterConfig seedFilterConfig;
     Acts::SeedFinderConfig<SimSpacePoint> seedFinderConfig;
     Acts::SpacePointGridConfig gridConfig;
+    Acts::SpacePointGridOptions gridOptions;
     Acts::SeedFinderOptions seedFinderOptions;
 
     // allow for different values of rMax in gridConfig and seedFinderConfig
     bool allowSeparateRMax = false;
 
     // vector containing the map of z bins in the top and bottom layers
-    std::vector<std::pair<int, int> > zBinNeighborsTop;
-    std::vector<std::pair<int, int> > zBinNeighborsBottom;
+    std::vector<std::pair<int, int>> zBinNeighborsTop;
+    std::vector<std::pair<int, int>> zBinNeighborsBottom;
     // number of phiBin neighbors at each side of the current bin that will be
     // used to search for SPs
     int numPhiNeighbors = 1;
@@ -68,7 +82,15 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
   const Config& config() const { return m_cfg; }
 
  private:
+  Acts::SeedFinderHashing<SimSpacePoint> m_seedFinder;
+  std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_bottomBinFinder;
+  std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_topBinFinder;
   Config m_cfg;
+
+  std::vector<std::unique_ptr<ReadDataHandle<std::vector<SimSpacePointContainer>>>>
+      m_inputSpacePoints{};
+
+  WriteDataHandle<SimSeedContainer> m_outputSeeds{this, "OutputSeeds"};
 };
 
 }  // namespace ActsExamples

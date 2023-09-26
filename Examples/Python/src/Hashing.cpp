@@ -23,29 +23,43 @@ namespace Acts::Python {
 
 void addHashing(Context& ctx) {
   auto mex = ctx.get("examples");
+  // auto [m, mex] = ctx.get("main", "examples");
 
-  {
-    using Alg = ActsExamples::HashingAlgorithm;
-    using Config = Alg::Config;
+  ACTS_PYTHON_DECLARE_ALGORITHM(
+      ActsExamples::HashingAlgorithm, mex, "HashingAlgorithm", inputSpacePoints,
+      bucketSize, zBins, phiBins, outputBuckets);
 
-    auto alg =
-        py::class_<ActsExamples::HashingAlgorithm, ActsExamples::BareAlgorithm,
-                   std::shared_ptr<ActsExamples::HashingAlgorithm>>(
-            mex, "HashingAlgorithm")
-            .def(py::init<const Config&, Acts::Logging::Level>(),
-                 py::arg("config"), py::arg("level"))
-            .def_property_readonly("config",
-                                   &ActsExamples::HashingAlgorithm::config);
+  // {
+  //   using Alg = ActsExamples::HashingAlgorithm;
+  //   using Config = Alg::Config;
 
-    auto c = py::class_<Config>(alg, "Config").def(py::init<>());
+  //   auto alg =
+  //       py::class_<ActsExamples::HashingAlgorithm, ActsExamples::BareAlgorithm,
+  //                  std::shared_ptr<ActsExamples::HashingAlgorithm>>(
+  //           mex, "HashingAlgorithm")
+  //           .def(py::init<const Config&, Acts::Logging::Level>(),
+  //                py::arg("config"), py::arg("level"))
+  //           .def_property_readonly("config",
+  //                                  &ActsExamples::HashingAlgorithm::config);
 
-    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
-    ACTS_PYTHON_MEMBER(inputSpacePoints);
-    ACTS_PYTHON_MEMBER(bucketSize);
-    ACTS_PYTHON_MEMBER(zBins);
-    ACTS_PYTHON_MEMBER(phiBins);
-    ACTS_PYTHON_STRUCT_END();
-  }
+  //   auto c = py::class_<Config>(alg, "Config").def(py::init<>());
+
+  //   ACTS_PYTHON_STRUCT_BEGIN(c, Config);
+  //   ACTS_PYTHON_MEMBER(inputSpacePoints);
+  //   ACTS_PYTHON_MEMBER(bucketSize);
+  //   ACTS_PYTHON_MEMBER(zBins);
+  //   ACTS_PYTHON_MEMBER(phiBins);
+  //   ACTS_PYTHON_MEMBER(outputBuckets);
+  //   ACTS_PYTHON_STRUCT_END();
+  // }
+
+  // // auto [m, mex, onnx] = ctx.get("main", "examples", "onnx");
+  // // auto mlpack = mex.def_submodule("_mlpack");
+
+  // ACTS_PYTHON_DECLARE_ALGORITHM(
+  //     ActsExamples::AmbiguityResolutionMLDBScanAlgorithm, mlpack,
+  //     "AmbiguityResolutionMLDBScanAlgorithm", inputTracks, inputDuplicateNN,
+  //     outputTracks, nMeasurementsMin, epsilonDBScan, minPointsDBScan);
 
 }
 

@@ -27,9 +27,9 @@ ActsExamples::CsvBucketWriter::CsvBucketWriter(
     : WriterT(config.inputBuckets, "CsvBucketWriter", level),
       m_cfg(config) {}
 
-ActsExamples::CsvBucketWriter::~CsvBucketWriter() {}
+ActsExamples::CsvBucketWriter::~CsvBucketWriter() = default;
 
-ActsExamples::ProcessCode ActsExamples::CsvBucketWriter::endRun() {
+ActsExamples::ProcessCode ActsExamples::CsvBucketWriter::finalize() {
   // Write the tree
   return ProcessCode::SUCCESS;
 }
@@ -93,26 +93,34 @@ ActsExamples::ProcessCode ActsExamples::CsvBucketWriter::writeT(
     //break;
    //}
   
-  int bucketIdx = 0; 
+  int bucketIdx = 0;
   for (const auto& bucket : buckets) {
-  if (bucket.empty()){
-  continue;
-  }
-  //for (int SPIdx = 0; SPIdx < bucket.size(); SPIdx++){
-  for (int nLines = 0; nLines < bucket.size()/20 + (int)(bucket.size()%20!=0); nLines++){
-  bucketData.bucketIdx = bucketIdx;
-  bucketData.bucketSize = bucket.size();
-  for (int SPIdx = 0; SPIdx < 20; SPIdx++){
-  if (nLines*20+SPIdx >= bucket.size()){
-  break;
-  }
-    bucketData.measurement_id[SPIdx] = (static_cast<const IndexSourceLink&>(*(bucket[nLines*20+SPIdx]).sourceLinks()[0])).index();
+    if (bucket.empty()) {
+      continue;
     }
-    writerBucket.append(bucketData);
-   }
-    //break;
+    // for (int SPIdx = 0; SPIdx < bucket.size(); SPIdx++){
+    for (int nLines = 0;
+         nLines < bucket.size() / 20 + (int)(bucket.size() % 20 != 0);
+         nLines++) {
+      bucketData.bucketIdx = bucketIdx;
+      bucketData.bucketSize = bucket.size();
+      for (int SPIdx = 0; SPIdx < 20; SPIdx++) {
+        if (nLines * 20 + SPIdx >= bucket.size()) {
+          break;
+        }
+        // bucketData.measurement_id[SPIdx] =
+        //     (static_cast<const IndexSourceLink&>(
+        //          *(bucket[nLines * 20 + SPIdx]).sourceLinks()[0]))
+        //         .index();
+        bucketData.measurement_id[SPIdx] =
+                 (bucket[nLines * 20 + SPIdx]).sourceLinks()[0].get<IndexSourceLink>()
+                .index();
+      }
+      writerBucket.append(bucketData);
+    }
+    // break;
     bucketIdx++;
-   }
-  
+  }
+
   return ActsExamples::ProcessCode::SUCCESS;
 }
