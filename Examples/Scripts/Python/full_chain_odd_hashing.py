@@ -25,6 +25,8 @@ from acts.examples.reconstruction import (
     addVertexFitting,
     VertexFinder,
     addSeedPerformanceWriters,
+    addSeedingTruthSelection,
+    addSpacePointsMaking,
 )
 
 import acts.examples.reconstruction as reconstruction
@@ -43,7 +45,7 @@ SeedingAlgorithm = Enum(
 )
 
 DetectorName = Enum(
-    "DetectorName", "ODD generic"
+    "DetectorName", "ODD generic ITk"
 )
 
 SeedFinderConfigName = Enum(
@@ -143,6 +145,7 @@ Config.__annotations__ = {'mu': int, 'bucketSize': int, 'maxSeedsPerSpM': int, '
 # config = Config(mu=50, bucketSize=0, maxSeedsPerSpM=5, seedFinderConfig="cpp", detector=DetectorName.ODD)
 # config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=1, seedFinderConfig="TrackML", detector=DetectorName.generic, seedingAlgorithm=SeedingAlgorithm.HashingSeeding)
 config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=maxSeedsPerSpM, seedFinderConfig="TrackML", detector=DetectorName.generic, 
+# config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=maxSeedsPerSpM, seedFinderConfig="TrackML", detector=DetectorName.ODD, 
                 seedingAlgorithm=seedingAlgorithm, metric=metric, AnnoySeed=AnnoySeed, zBins=zBins, phiBins=phiBins)
 # config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=1, seedFinderConfig="TrackML", detector=DetectorName.ODD, 
 #                 seedingAlgorithm=seedingAlgorithm, metric=metric, AnnoySeed=AnnoySeed, zBins=zBins)
@@ -170,7 +173,8 @@ if config.detector == DetectorName.ODD:
 
     digiConfig = oddDigiConfig
 
-    geoSelectionConfigFile = actsExamplesDir / "Algorithms/TrackFinding/share/geoSelection-openDataDetector.json"
+    # geoSelectionConfigFile = actsExamplesDir / "Algorithms/TrackFinding/share/geoSelection-openDataDetector.json"
+    geoSelectionConfigFile = oddSeedingSel
 
 elif config.detector == DetectorName.generic:
     print("Create detector and tracking geometry")
@@ -178,6 +182,14 @@ elif config.detector == DetectorName.generic:
     detector, trackingGeometry, _ = acts.examples.GenericDetector.create()
     digiConfig = actsExamplesDir / "Algorithms/Digitization/share/default-smearing-config-generic.json"
     geoSelectionConfigFile = actsExamplesDir / "Algorithms/TrackFinding/share/geoSelection-genericDetector.json"
+elif config.detector == DetectorName.ITk:
+    geo_dir = actsExamplesDir.parent.parent / "acts-itk"
+
+    detector, trackingGeometry, decorators = acts.examples.itk.buildITkGeometry(geo_dir)
+
+    digiConfig = geo_dir / "itk-hgtd/itk-smearing-config.json"
+
+    geoSelectionConfigFile = geo_dir / "itk-hgtd/geoSelection-ITk.json"
 else:
     exit("Detector not supported")
 
@@ -234,19 +246,21 @@ config_file.close()
 # acts.examples.dump_args_calls(locals())  # show python binding calls
 
 field = acts.ConstantBField(acts.Vector3(0.0, 0.0, 2.0 * u.T))
+if config.detector == DetectorName.ITk:
+    field = acts.examples.MagneticFieldMapXyz(str(geo_dir / "bfield/ATLAS-BField-xyz.root"))
 rnd = acts.examples.RandomNumbers(seed=42)
 
 s = acts.examples.Sequencer(
     events=nevents, 
     numThreads=1, 
     outputDir=str(outputDir), 
+    trackFpes=False,
     enableEventTiming=True
 )
 
 addPythia8(
     s,
     hardProcess=["Top:qqbar2ttbar=on"],
-    # npileup=0,
     npileup=npileup,
     vtxGen=acts.examples.GaussianVertexGenerator(
         # stddev=acts.Vector4(0.0125 * u.mm, 0.0125 * u.mm, 55.5 * u.mm, 5.0 * u.ns),
@@ -262,7 +276,11 @@ addFatras(
     s,
     trackingGeometry,
     field,
-    preSelectParticles=ParticleSelectorConfig(eta=(-eta, eta), pt=(150 * u.MeV, None), removeNeutral=True),
+    preSelectParticles=ParticleSelectorConfig(
+        eta=(-eta, eta), 
+        pt=(150 * u.MeV, None), 
+        removeNeutral=True),
+    enableInteractions=True,
     outputDirRoot=outputDir,
     outputDirCsv=outputDir if saveFiles else None,
     rnd=rnd,
@@ -325,71 +343,12 @@ SeedFilterConfigArg = reconstruction.SeedFilterConfigArg
 SpacePointGridConfigArg = reconstruction.SpacePointGridConfigArg
 SeedingAlgorithmConfigArg = reconstruction.SeedingAlgorithmConfigArg
 
-# SeedFinderOptionsArg = namedtuple(
-#     "SeedFinderOptions", ["beamPos", "bFieldInZ"], defaults=[(None, None), None]
-#     )
-
-# SeedFilterConfigArg = namedtuple(
-#     "SeedFilterConfig",
-#     [
-#         "impactWeightFactor",
-#         "zOriginWeightFactor",
-#         "compatSeedWeight",
-#         "compatSeedLimit",
-#         "numSeedIncrement",
-#         "seedWeightIncrement",
-#         "seedConfirmation",
-#         "curvatureSortingInFilter",
-#         "maxSeedsPerSpMConf",
-#         "maxQualitySeedsPerSpMConf",
-#         "useDeltaRorTopRadius",
-#         "deltaRMin",
-#     ],
-#     defaults=[None] * 12,
-# )
-
-# SpacePointGridConfigArg = namedtuple(
-#     "SeedGridConfig",
-#     [
-#         "rMax",
-#         "zBinEdges",
-#         "phiBinDeflectionCoverage",
-#         "impactMax",
-#         "deltaRMax",
-#         "phi",  # (min,max)
-#     ],
-#     defaults=[None] * 5 + [(None, None)] * 1,
-# )
-
-# SeedingAlgorithmConfigArg = namedtuple(
-#     "SeedingAlgorithmConfig",
-#     [
-#         "allowSeparateRMax",
-#         "zBinNeighborsTop",
-#         "zBinNeighborsBottom",
-#         "numPhiNeighbors",
-#     ],
-#     defaults=[None] * 4,
-# )
 
 initialVarInflation: Optional[list] = None
 
 import numpy as np
 cotThetaMax = 1/(np.tan(2*np.arctan(np.exp(-eta))))# =1/tan(2×atan(e^(-eta)))
 if config.seedFinderConfig == "TrackML":
-    # seedFinderConfigArg = SeedfinderConfigArg(
-    #         r=(None, 200 * u.mm),  # rMin=default, 33mm
-    #         deltaR=(1 * u.mm, 60 * u.mm),
-    #         collisionRegion=(-250 * u.mm, 250 * u.mm),
-    #         z=(-2000 * u.mm, 2000 * u.mm),
-    #         maxSeedsPerSpM=maxSeedsPerSpM,
-    #         sigmaScattering=5,
-    #         radLengthPerSeed=0.1,
-    #         minPt=500 * u.MeV,
-    #         bFieldInZ=1.99724 * u.T,
-    #         impactMax=3 * u.mm,
-    #         # cotThetaMax = 1000,
-    #     )
     seedFinderConfigArg = SeedFinderConfigArg(
             r=(None, 200 * u.mm),  # rMin=default, 33mm
             deltaR=(1 * u.mm, 60 * u.mm),
@@ -406,45 +365,31 @@ if config.seedFinderConfig == "TrackML":
     )
 elif config.seedFinderConfig == "cpp":
     seedFinderConfigArg = SeedFinderConfigArg(maxSeedsPerSpM=maxSeedsPerSpM, cotThetaMax=cotThetaMax)
-
+else:
+    exit("seedFinderConfig not supported")
 
 seedFinderOptionsArg: SeedFinderOptionsArg = SeedFinderOptionsArg(bFieldInZ=1.99724 * u.T)
 seedFilterConfigArg: SeedFilterConfigArg = SeedFilterConfigArg()
 spacePointGridConfigArg: SpacePointGridConfigArg = SpacePointGridConfigArg()
 seedingAlgorithmConfigArg: SeedingAlgorithmConfigArg = SeedingAlgorithmConfigArg()
-inputParticles: str = "particles_initial"
+inputParticles: str = "particles"
 outputDirRoot: Optional[Union[Path, str]] = outputDir
 logLevel: Optional[acts.logging.Level] = None
-rnd: Optional[acts.examples.RandomNumbers] = None
 
+logLevel = acts.examples.defaultLogging(s, logLevel)()
 customLogLevel = acts.examples.defaultLogging(s, logLevel)
 logger = acts.logging.getLogger("addSeeding")
 
 if truthSeedRanges is not None:
-    selAlg = acts.examples.TruthSeedSelector(
-        **acts.examples.defaultKWArgs(
-            ptMin=truthSeedRanges.pt[0],
-            ptMax=truthSeedRanges.pt[1],
-            etaMin=truthSeedRanges.eta[0],
-            etaMax=truthSeedRanges.eta[1],
-            nHitsMin=truthSeedRanges.nHits[0],
-            nHitsMax=truthSeedRanges.nHits[1],
-            rhoMin=truthSeedRanges.rho[0],
-            rhoMax=truthSeedRanges.rho[1],
-            zMin=truthSeedRanges.z[0],
-            zMax=truthSeedRanges.z[1],
-            phiMin=truthSeedRanges.phi[0],
-            phiMax=truthSeedRanges.phi[1],
-            absEtaMin=truthSeedRanges.absEta[0],
-            absEtaMax=truthSeedRanges.absEta[1],
-        ),
-        level=acts.logging.INFO,
-        inputParticles=inputParticles,
-        inputMeasurementParticlesMap="measurement_particles_map",
-        outputParticles="truth_seeds_selected",
+    selectedParticles = "truth_seeds_selected"
+    addSeedingTruthSelection(
+        s,
+        inputParticles,
+        selectedParticles,
+        truthSeedRanges,
+        logLevel,
+        # level=acts.logging.INFO,
     )
-    s.addAlgorithm(selAlg)
-    selectedParticles = selAlg.config.outputParticles
 else:
     selectedParticles = inputParticles
 
@@ -452,26 +397,9 @@ print(selectedParticles)
 
 # Create starting parameters from either particle smearing or combined seed
 # finding and track parameters estimation
-spAlg = acts.examples.SpacePointMaker(
-    level=acts.logging.INFO,
-    inputSourceLinks="sourcelinks",
-    inputMeasurements="measurements",
-    outputSpacePoints="spacepoints",
-    trackingGeometry=trackingGeometry,
-    geometrySelection=acts.examples.readJsonGeometryList(
-        str(geoSelectionConfigFile)
-    ),
+spacePoints = addSpacePointsMaking(
+    s, trackingGeometry, geoSelectionConfigFile, logLevel
 )
-s.addAlgorithm(spAlg)
-
-# if saveFiles:
-#     s.addWriter(
-#         acts.examples.CsvSpacepointWriter(
-#             level=customLogLevel(),
-#             inputSpacepoints="spacepoints",
-#             outputDir=str(outputDirRoot),
-#         )
-#     )
 
 outputDirRoot = Path(outputDirRoot)
 if not outputDirRoot.exists():
@@ -479,7 +407,7 @@ if not outputDirRoot.exists():
 s.addWriter(
     acts.examples.RootSpacepointWriter(
         level=customLogLevel(),
-        inputSpacepoints="spacepoints",
+        inputSpacepoints=spacePoints,
         filePath=str(outputDirRoot / "spacepoints.root")
     )
 )
@@ -699,7 +627,6 @@ gridOptions = acts.SpacePointGridOptions(
 )
 
 if config.seedingAlgorithm == SeedingAlgorithm.Default:
-    spacePoints = "spacepoints"
     logger.info("Using default seeding")
     logLevel = acts.examples.defaultLogging(s, logLevel)()
 
@@ -753,7 +680,7 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
 else:
     logger.fatal("unknown seedingAlgorithm %s", config.seedingAlgorithm)
 
-seeds = "seeds"
+seeds = seedingAlg.config.outputSeeds
 
 initialSigmas: Optional[list] = None
 particleHypothesis: Optional[
@@ -767,12 +694,7 @@ parEstimateAlg = acts.examples.TrackParamsEstimationAlgorithm(
     trackingGeometry=trackingGeometry,
     magneticField=field,
     **acts.examples.defaultKWArgs(
-        sigmaLoc0=initialSigmas[0] if initialSigmas is not None else None,
-        sigmaLoc1=initialSigmas[1] if initialSigmas is not None else None,
-        sigmaPhi=initialSigmas[2] if initialSigmas is not None else None,
-        sigmaTheta=initialSigmas[3] if initialSigmas is not None else None,
-        sigmaQOverP=initialSigmas[4] if initialSigmas is not None else None,
-        sigmaT0=initialSigmas[5] if initialSigmas is not None else None,
+        initialSigmas=initialSigmas,
         initialVarInflation=initialVarInflation,
         particleHypothesis=particleHypothesis,
     ),
@@ -873,11 +795,11 @@ addCKFTracks(
     TrackSelectorConfig(
         pt=(1.0 * u.GeV, None),
         absEta=(None, eta),
-        # loc0=(-4.0 * u.mm, 4.0 * u.mm),
+        #loc0=(-4.0 * u.mm, 4.0 * u.mm),
         nMeasurementsMin=6,
     ),
     outputDirRoot=outputDir,
-    writeCovMat=True,
+    # writeCovMat=True,
     writeTrajectories=False,
     # outputDirCsv=outputDir,
 )
@@ -911,6 +833,35 @@ addCKFTracks(
 #     vertexFinder=VertexFinder.Iterative,
 #     outputDirRoot=outputDir,
 #     trajectories="trajectories",
+# )
+
+# if ambiguity_MLSolver:
+#     addAmbiguityResolutionML(
+#         s,
+#         AmbiguityResolutionMLConfig(
+#             maximumSharedHits=3, maximumIterations=1000000, nMeasurementsMin=7
+#         ),
+#         outputDirRoot=outputDir,
+#         # outputDirCsv=outputDir,
+#         onnxModelFile=os.path.dirname(__file__)
+#         + "/MLAmbiguityResolution/duplicateClassifier.onnx",
+#     )
+# else:
+#     addAmbiguityResolution(
+#         s,
+#         AmbiguityResolutionConfig(
+#             maximumSharedHits=3, maximumIterations=1000000, nMeasurementsMin=7
+#         ),
+#         outputDirRoot=outputDir,
+#         writeCovMat=True,
+#         # outputDirCsv=outputDir,
+#     )
+
+# addVertexFitting(
+#     s,
+#     field,
+#     vertexFinder=VertexFinder.Iterative,
+#     outputDirRoot=outputDir,
 # )
 
 s.run()
