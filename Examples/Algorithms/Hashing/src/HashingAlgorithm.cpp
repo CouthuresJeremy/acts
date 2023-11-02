@@ -37,6 +37,8 @@ ActsExamples::HashingAlgorithm::HashingAlgorithm(
 
   m_inputSpacePoints.initialize(m_cfg.inputSpacePoints);
 
+  m_inputAnnoyModel.initialize("OutputAnnoyModel");
+
   // for (const auto& spName : m_cfg.inputSpacePoints) {
   //   if (spName.empty()) {
   //     throw std::invalid_argument("Invalid space point input collection");
@@ -57,6 +59,8 @@ ActsExamples::HashingAlgorithm::HashingAlgorithm(
 
 ActsExamples::ProcessCode ActsExamples::HashingAlgorithm::execute(
     const ActsExamples::AlgorithmContext& ctx) const {
+
+  ACTS_DEBUG("Start of HashingAlgorithm execute");
 
   // const auto& spacePoints =
   //     ctx.eventStore.get<SimSpacePointContainer>(m_cfg.inputSpacePoints);
@@ -115,6 +119,8 @@ ActsExamples::ProcessCode ActsExamples::HashingAlgorithm::execute(
     buckets.push_back(bucket);
   }
   m_outputBuckets(ctx, std::move(buckets));
+
+  ACTS_DEBUG("End of HashingAlgorithm execute");
 
   return ProcessCode::SUCCESS;
 }

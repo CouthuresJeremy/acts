@@ -44,6 +44,7 @@ ActsExamples::HashingTrainingAlgorithm::HashingTrainingAlgorithm(
   // }
 
   // m_outputSeeds.initialize(m_cfg.outputSeeds);
+  m_outputAnnoyModel.initialize("OutputAnnoyModel");
 }
 
 ActsExamples::ProcessCode ActsExamples::HashingTrainingAlgorithm::execute(
