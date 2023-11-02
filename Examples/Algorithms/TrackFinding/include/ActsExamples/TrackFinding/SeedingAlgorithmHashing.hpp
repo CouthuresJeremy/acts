@@ -10,7 +10,7 @@
 
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/SeedFilterConfig.hpp"
-#include "Acts/Seeding/SeedFinderHashing.hpp"
+#include "Acts/Seeding/SeedFinder.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Logger.hpp"
@@ -26,11 +26,59 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iterator>
+#include <vector>
+#include <set>
 
-namespace ActsExamples {
-template <typename external_spacepoint_t>
-class BinFinder;
-}  // namespace Acts
+
+// namespace std{
+//     template <typename T>
+//     struct mySet
+//     {
+//         using container_t = std::set<T>;
+//         mySet() = default;
+//         /**    @name Disallow default copy, assignment */
+//         //@{
+//         mySet(const mySet&) = default;
+//         mySet& operator=(const mySet&) = default;
+//         //@}
+
+//         /** Get the set */
+//         container_t& get() {
+//             return m_set;
+//         }
+
+//         /** Define push_back for a set*/
+//         void push_back(const T& t) { m_set.insert(t); }
+
+//         /** Clear */
+//         void clear() { m_set.clear(); }
+
+//     private:
+//         container_t m_set;
+//     };
+// }
+
+
+template <typename T>
+class SetBackInserterWrapper {
+public:
+    using value_type = T;
+
+    SetBackInserterWrapper(std::set<T>& set) : set_(set) {}
+
+    void push_back(const T& value) {
+        set_.insert(value);
+    }
+
+private:
+    std::set<T>& set_;
+};
+
+template <typename T>
+SetBackInserterWrapper<T> make_set_back_inserter(std::set<T>& set) {
+    return SetBackInserterWrapper<T>(set);
+}
 
 namespace ActsExamples {
 struct AlgorithmContext;
@@ -82,7 +130,7 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
   const Config& config() const { return m_cfg; }
 
  private:
-  Acts::SeedFinderHashing<SimSpacePoint> m_seedFinder;
+  Acts::SeedFinder<SimSpacePoint> m_seedFinder;
   std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_bottomBinFinder;
   std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_topBinFinder;
   Config m_cfg;
