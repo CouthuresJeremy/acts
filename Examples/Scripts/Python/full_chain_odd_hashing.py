@@ -190,6 +190,8 @@ elif config.detector == DetectorName.ITk:
     digiConfig = geo_dir / "itk-hgtd/itk-smearing-config.json"
 
     geoSelectionConfigFile = geo_dir / "itk-hgtd/geoSelection-ITk.json"
+
+    field = acts.examples.MagneticFieldMapXyz(str(geo_dir / "bfield/ATLAS-BField-xyz.root"))
 else:
     exit("Detector not supported")
 
@@ -245,9 +247,10 @@ config_file.close()
 
 # acts.examples.dump_args_calls(locals())  # show python binding calls
 
-field = acts.ConstantBField(acts.Vector3(0.0, 0.0, 2.0 * u.T))
-if config.detector == DetectorName.ITk:
-    field = acts.examples.MagneticFieldMapXyz(str(geo_dir / "bfield/ATLAS-BField-xyz.root"))
+if config.detector != DetectorName.ITk:
+    field = acts.ConstantBField(acts.Vector3(0.0, 0.0, 2.0 * u.T))
+else:
+    exit(f"Detector not supported {config.detector}")
 rnd = acts.examples.RandomNumbers(seed=42)
 
 s = acts.examples.Sequencer(
@@ -272,19 +275,50 @@ addPythia8(
     # outputDirCsv=outputDir if saveFiles else None,
 )
 
-addFatras(
-    s,
-    trackingGeometry,
-    field,
-    preSelectParticles=ParticleSelectorConfig(
-        eta=(-eta, eta), 
-        pt=(150 * u.MeV, None), 
-        removeNeutral=True),
-    enableInteractions=True,
-    outputDirRoot=outputDir,
-    outputDirCsv=outputDir if saveFiles else None,
-    rnd=rnd,
-)
+g4_simulation = False
+
+if g4_simulation:
+    if s.config.numThreads != 1:
+        raise ValueError("Geant 4 simulation does not support multi-threading")
+
+    # Pythia can sometime simulate particles outside the world volume, a cut on the Z of the track help mitigate this effect
+    # Older version of G4 might not work, this as has been tested on version `geant4-11-00-patch-03`
+    # For more detail see issue #1578
+    addGeant4(
+        s,
+        detector,
+        trackingGeometry,
+        field,
+        # g4DetectorConstructionFactory=DDG4DetectorConstructionFactory(detector),
+        # g4DetectorConstructionFactory=TelescopeG4DetectorConstructionFactory(detector),
+        # g4DetectorConstructionFactory=detector,
+        preSelectParticles=ParticleSelectorConfig(
+            rho=(0.0, 28 * u.mm),
+            absZ=(0.0, 1.0 * u.m),
+            eta=(-4.0, 4.0),
+            pt=(150 * u.MeV, None),
+            removeNeutral=True,
+        ),
+        outputDirRoot=outputDir,
+        # outputDirCsv=outputDir,
+        rnd=rnd,
+        killVolume=trackingGeometry.worldVolume,
+        killAfterTime=25 * u.ns,
+    )
+else:
+    addFatras(
+        s,
+        trackingGeometry,
+        field,
+        preSelectParticles=ParticleSelectorConfig(
+            eta=(-eta, eta), 
+            pt=(150 * u.MeV, None), 
+            removeNeutral=True),
+        enableInteractions=True,
+        outputDirRoot=outputDir,
+        outputDirCsv=outputDir if saveFiles else None,
+        rnd=rnd,
+    )
 
 addDigitization(
     s,
@@ -295,6 +329,10 @@ addDigitization(
     outputDirCsv=outputDir if saveFiles else None,
     rnd=rnd,
 )
+
+
+# logLevel = acts.logging.DEBUG
+# s.config.logLevel = acts.logging.DEBUG
 
 # ParticleSmearingSigmas = namedtuple(
 #     "ParticleSmearingSigmas",
@@ -469,6 +507,7 @@ def addHashing(
         bucketSize=bucketSize,
         zBins=zBins,
         phiBins=phiBins,
+        outputBuckets="OutputBuckets"
     )
 
     hashingAlg = acts.examples.HashingAlgorithm(hashingCfg, 
@@ -496,7 +535,7 @@ if doHashing:
         s.addWriter(
             acts.examples.CsvBucketWriter(
                 level=customLogLevel(),
-                inputBuckets="buckets",
+                inputBuckets="OutputBuckets",
                 outputDir=str(outputDirRoot),
             )
         )
@@ -656,15 +695,14 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
     # else:
     #     bucketSP = "spacepoints"
     bucketSP = "buckets"
+    bucketSP = "OutputBuckets"
     bucket_list.append(bucketSP)
     logger.info("Using Hashing seeding")
 
     seedingAlg = acts.examples.SeedingAlgorithmHashing(
-        level=customLogLevel(),
-        # inputSpacePoints=[spAlg.config.outputSpacePoints],    
-        inputSpacePoints=bucket_list,    
+        level=logLevel,
+        inputSpacePoints=bucket_list,
         outputSeeds="seeds",
-        outputProtoTracks="prototracks",
         **acts.examples.defaultKWArgs(
             allowSeparateRMax=seedingAlgorithmConfigArg.allowSeparateRMax,
             zBinNeighborsTop=seedingAlgorithmConfigArg.zBinNeighborsTop,
@@ -672,6 +710,7 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
             numPhiNeighbors=seedingAlgorithmConfigArg.numPhiNeighbors,
         ),
         gridConfig=gridConfig,
+        gridOptions=gridOptions,
         seedFilterConfig=seedFilterConfig,
         seedFinderConfig=seedFinderConfig,
         seedFinderOptions=seedFinderOptions,
@@ -679,6 +718,7 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
     s.addAlgorithm(seedingAlg)
 else:
     logger.fatal("unknown seedingAlgorithm %s", config.seedingAlgorithm)
+    exit(f"unknown seedingAlgorithm {config.seedingAlgorithm}")
 
 seeds = seedingAlg.config.outputSeeds
 
