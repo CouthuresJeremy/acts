@@ -345,14 +345,11 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
       // if add top space point -> need to skip compat with previous middle and bottoms
       // if add bottom space point -> need to skip compat with previous middle and tops
       for (const auto [bottom, middle, top] : spacePointsGrouping) {
-        auto wrapper = make_set_back_inserter(seedsSet);
+        SetPolicy setPolicy(seedsSet);
+        GenericBackInserter back_inserter(setPolicy);
         m_seedFinder.createSeedsForGroup(
             m_cfg.seedFinderOptions, state, spacePointsGrouping.grid(),
-            std::back_inserter(wrapper), bottom, middle, top, rMiddleSPRange);
-        
-        // m_seedFinder.createSeedsForGroup(
-        //     m_cfg.seedFinderOptions, state, spacePointsGrouping.grid(),
-        //     std::inserter(seedsSet, seedsSet.end()), bottom, middle, top, rMiddleSPRange);
+            back_inserter, bottom, middle, top, rMiddleSPRange);
       }
     }
   }

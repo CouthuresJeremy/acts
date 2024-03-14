@@ -11,6 +11,7 @@
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/SeedFilterConfig.hpp"
 #include "Acts/Seeding/SeedFinder.hpp"
+#include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Logger.hpp"
@@ -30,55 +31,17 @@
 #include <vector>
 #include <set>
 
-
-// namespace std{
-//     template <typename T>
-//     struct mySet
-//     {
-//         using container_t = std::set<T>;
-//         mySet() = default;
-//         /**    @name Disallow default copy, assignment */
-//         //@{
-//         mySet(const mySet&) = default;
-//         mySet& operator=(const mySet&) = default;
-//         //@}
-
-//         /** Get the set */
-//         container_t& get() {
-//             return m_set;
-//         }
-
-//         /** Define push_back for a set*/
-//         void push_back(const T& t) { m_set.insert(t); }
-
-//         /** Clear */
-//         void clear() { m_set.clear(); }
-
-//     private:
-//         container_t m_set;
-//     };
-// }
-
-
 template <typename T>
-class SetBackInserterWrapper {
+class SetPolicy : public ContainerPolicy<T> {
+    std::set<T>& container;
+
 public:
-    using value_type = T;
+    SetPolicy(std::set<T>& s) : container(s) {}
 
-    SetBackInserterWrapper(std::set<T>& set) : set_(set) {}
-
-    void push_back(const T& value) {
-        set_.insert(value);
+    void policyInsert(T value) override {
+        container.insert(value);
     }
-
-private:
-    std::set<T>& set_;
 };
-
-template <typename T>
-SetBackInserterWrapper<T> make_set_back_inserter(std::set<T>& set) {
-    return SetBackInserterWrapper<T>(set);
-}
 
 namespace ActsExamples {
 struct AlgorithmContext;
