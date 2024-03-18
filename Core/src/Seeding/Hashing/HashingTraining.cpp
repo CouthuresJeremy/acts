@@ -6,10 +6,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "ActsExamples/Hashing/HashingTraining.hpp"
+#include "Acts/Seeding/Hashing/HashingTraining.hpp"
 
 #include "Acts/Definitions/Units.hpp"
-#include "ActsExamples/Framework/WhiteBoard.hpp"
+// #include "ActsExamples/Framework/WhiteBoard.hpp"
 
 ActsExamples::HashingTrainingAlgorithm::HashingTrainingAlgorithm(
     const ActsExamples::HashingTrainingAlgorithm::Config& cfg, Acts::Logging::Level level)

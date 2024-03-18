@@ -1,10 +1,10 @@
 #include "Acts/Utilities/Logger.hpp"
-#include "ActsExamples/Framework/AlgorithmContext.hpp"
-#include "ActsExamples/Framework/ProcessCode.hpp"
-#include "ActsExamples/EventData/SimSpacePoint.hpp"
+// #include "ActsExamples/Framework/AlgorithmContext.hpp"
+// #include "ActsExamples/Framework/ProcessCode.hpp"
+// #include "ActsExamples/EventData/SimSpacePoint.hpp"
 
-#include "ActsExamples/Hashing/kissrandom.h"
-#include "ActsExamples/Hashing/annoylib_custom.h"
+#include "Acts/Seeding/Hashing/kissrandom.h"
+#include "Acts/Seeding/Hashing/annoylib_custom.h"
 
 #include <map>
 #include <set>

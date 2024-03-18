@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include "ActsExamples/Framework/IAlgorithm.hpp"
-#include "ActsExamples/Framework/DataHandle.hpp"
-#include "ActsExamples/EventData/SimSpacePoint.hpp"
-#include "ActsExamples/Framework/ProcessCode.hpp"
+// #include "ActsExamples/Framework/IAlgorithm.hpp"
+// #include "ActsExamples/Framework/DataHandle.hpp"
+// #include "ActsExamples/EventData/SimSpacePoint.hpp"
+// #include "ActsExamples/Framework/ProcessCode.hpp"
 
-#include "ActsExamples/Hashing/kissrandom.h"
-#include "ActsExamples/Hashing/annoylib_custom.h"
+#include "Acts/Seeding/Hashing/kissrandom.h"
+#include "Acts/Seeding/Hashing/annoylib_custom.h"
 
 #include <cstddef>
 #include <string>

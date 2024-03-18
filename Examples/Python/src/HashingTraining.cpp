@@ -7,7 +7,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "Acts/Plugins/Python/Utilities.hpp"
-#include "ActsExamples/Hashing/HashingTraining.hpp"
+#include "Acts/Seeding/Hashing/include/HashingTraining.hpp"
 
 #include <memory>
 

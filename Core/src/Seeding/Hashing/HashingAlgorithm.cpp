@@ -6,21 +6,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "ActsExamples/Hashing/HashingAnnoy.hpp"
-#include "ActsExamples/Hashing/HashingAlgorithm.hpp"
-#include "ActsExamples/Hashing/HashingTraining.hpp"
+#include "Acts/Seeding/Hashing/HashingAnnoy.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
+#include "Acts/Seeding/Hashing/HashingTraining.hpp"
 
 #include "Acts/Digitization/PlanarModuleCluster.hpp"
 #include "Acts/Utilities/Logger.hpp"
-#include "ActsExamples/EventData/GeometryContainers.hpp"
-#include "ActsExamples/EventData/Index.hpp"
-#include "ActsExamples/EventData/SimParticle.hpp"
-#include "ActsExamples/Framework/WhiteBoard.hpp"
-#include "ActsExamples/Utilities/Range.hpp"
-#include "ActsExamples/EventData/SimSpacePoint.hpp"
+// #include "ActsExamples/EventData/GeometryContainers.hpp"
+// #include "ActsExamples/EventData/Index.hpp"
+// #include "ActsExamples/EventData/SimParticle.hpp"
+// #include "ActsExamples/Framework/WhiteBoard.hpp"
+// #include "ActsExamples/Utilities/Range.hpp"
+// #include "ActsExamples/EventData/SimSpacePoint.hpp"
 
-#include "ActsExamples/Hashing/kissrandom.h"
-#include "ActsExamples/Hashing/annoylib_custom.h"
+#include "Acts/Seeding/Hashing/kissrandom.h"
+#include "Acts/Seeding/Hashing/annoylib_custom.h"
 
 #include <vector>
 
