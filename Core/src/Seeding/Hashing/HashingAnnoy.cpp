@@ -7,11 +7,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "Acts/Seeding/Hashing/HashingAnnoy.hpp"
-#include "Acts/Seeding/Hashing/HashingTraining.hpp"
+// #include "Acts/Seeding/Hashing/HashingTraining.hpp"
 
 #include "Acts/Definitions/Units.hpp"
 #include "Acts/Seeding/Hashing/kissrandom.h"
 #include "Acts/Seeding/Hashing/annoylib_custom.h"
+
+#include "Acts/Definitions/Algebra.hpp"
 
 #include <map>
 #include <vector>
@@ -42,12 +44,13 @@ int GetBinIndexPhi(double phi, unsigned int phiBins){
 }
 
 // template <typename AnnoyModel>
-ActsExamples::ProcessCode ActsExamples::HashingAnnoy::ComputeSpacePointsBuckets(
-    const AlgorithmContext& ctx, 
+template <typename external_spacepoint_t, typename SpacePointContainer>
+void Acts::HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePointsBuckets(
+    // const AlgorithmContext& ctx, 
     // AnnoyModel* annoyModel,
     const Annoy::AnnoyIndex<unsigned int, double, Annoy::AngularEuclidean, Annoy::Kiss32Random, 
                     Annoy::AnnoyIndexSingleThreadedBuildPolicy>* annoyModel,
-    const ActsExamples::SimSpacePointContainer& spacePoints,
+    const SpacePointContainer& spacePoints,
     const unsigned int bucketSize,
     const unsigned int zBins,
     const unsigned int phiBins) {
@@ -58,7 +61,7 @@ ActsExamples::ProcessCode ActsExamples::HashingAnnoy::ComputeSpacePointsBuckets(
   // std::cout << annoyModel->get_n_items() << "\n";
 
   if (zBins > 0){
-    std::set<ActsExamples::SimSpacePoint> bucketsSetSPMap[zBins];
+    std::set<external_spacepoint_t> bucketsSetSPMap[zBins];
     for(unsigned int spacePointIndex=0; spacePointIndex < spacePoints.size(); spacePointIndex++){
       auto spacePoint = spacePoints[spacePointIndex];
       Scalar x = spacePoint.x() / Acts::UnitConstants::mm;
@@ -78,13 +81,11 @@ ActsExamples::ProcessCode ActsExamples::HashingAnnoy::ComputeSpacePointsBuckets(
 
       int binIndex = GetBinIndex(r2, z, zBins);
       if (binIndex < 0 || binIndex >= zBins){
-        // ACTS_ERROR("binIndex outside of bins covering");
-        std::cout << "binIndex outside of bins covering" << std::endl;
-        return ActsExamples::ProcessCode::ABORT;
+        throw std::runtime_error("binIndex outside of bins covering");
       }
       
       // std::cout << "Here1\n";
-      std::set<ActsExamples::SimSpacePoint> *bucketSet;
+      std::set<external_spacepoint_t> *bucketSet;
       bucketSet = &bucketsSetSPMap[binIndex];
 
       // SimSpacePointContainer bucket;
@@ -116,7 +117,7 @@ ActsExamples::ProcessCode ActsExamples::HashingAnnoy::ComputeSpacePointsBuckets(
       }
     }
   } else if (phiBins > 0) {
-    std::set<ActsExamples::SimSpacePoint> bucketsSetSPMap[phiBins];
+    std::set<external_spacepoint_t> bucketsSetSPMap[phiBins];
     for(unsigned int spacePointIndex=0; spacePointIndex < spacePoints.size(); spacePointIndex++){
       auto spacePoint = spacePoints[spacePointIndex];
       Scalar x = spacePoint.x() / Acts::UnitConstants::mm;
@@ -138,13 +139,11 @@ ActsExamples::ProcessCode ActsExamples::HashingAnnoy::ComputeSpacePointsBuckets(
 
       int binIndex = GetBinIndexPhi(phi, phiBins);
       if (binIndex < 0 || binIndex >= phiBins){
-        // ACTS_ERROR("binIndex outside of bins covering");
-        std::cout << "binIndex outside of bins covering" << std::endl;
-        return ActsExamples::ProcessCode::ABORT;
+        throw std::runtime_error("binIndex outside of bins covering");
       }
       
       // std::cout << "Here1\n";
-      std::set<ActsExamples::SimSpacePoint> *bucketSet;
+      std::set<external_spacepoint_t> *bucketSet;
       bucketSet = &bucketsSetSPMap[binIndex];
 
       // SimSpacePointContainer bucket;
@@ -179,5 +178,5 @@ ActsExamples::ProcessCode ActsExamples::HashingAnnoy::ComputeSpacePointsBuckets(
   else {
   }
 
-  return ActsExamples::ProcessCode::SUCCESS;
+  // return Acts::ProcessCode::SUCCESS;
 }

@@ -56,6 +56,7 @@ typedef signed __int64    int64_t;
 #include <vector>
 #include <algorithm>
 #include <queue>
+#include <iostream>
 #include <limits>
 
 #if __cplusplus >= 201103L

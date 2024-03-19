@@ -9,24 +9,27 @@
 #include "Acts/Seeding/Hashing/HashingTraining.hpp"
 
 #include "Acts/Definitions/Units.hpp"
+#include "Acts/Definitions/Algebra.hpp"
 // #include "ActsExamples/Framework/WhiteBoard.hpp"
 
-ActsExamples::HashingTrainingAlgorithm::HashingTrainingAlgorithm(
-    const ActsExamples::HashingTrainingAlgorithm::Config& cfg, Acts::Logging::Level level)
-    : IAlgorithm("HashingTrainingAlgorithm", level), m_cfg(cfg) {
+template <typename SpacePointContainer>
+Acts::HashingTrainingAlgorithm<SpacePointContainer>::HashingTrainingAlgorithm(
+    const Acts::HashingTrainingAlgorithmConfig& cfg, 
+    Acts::Logging::Level level)
+    : m_cfg(cfg) {
   if (m_cfg.f <= 0) {
     throw std::invalid_argument("Invalid f, f must be positive");
   }
-  if (m_cfg.inputSpacePoints.empty()) {
-    throw std::invalid_argument("Missing space points input collections");
-  }
+  // if (m_cfg.inputSpacePoints.empty()) {
+  //   throw std::invalid_argument("Missing space points input collections");
+  // }
   if (m_cfg.AnnoySeed <= 0) {
     throw std::invalid_argument("Invalid Annoy random seed, Annoy random seed must be positive");
   }
-  if (m_cfg.inputSpacePoints.empty()) {
-    throw std::invalid_argument("Missing space point input collections");
-  }
-  m_inputSpacePoints.initialize(m_cfg.inputSpacePoints);
+  // if (m_cfg.inputSpacePoints.empty()) {
+  //   throw std::invalid_argument("Missing space point input collections");
+  // }
+  // m_inputSpacePoints.initialize(m_cfg.inputSpacePoints);
 
   // for (const auto& spName : m_cfg.inputSpacePoints) {
   //   if (spName.empty()) {
@@ -44,36 +47,38 @@ ActsExamples::HashingTrainingAlgorithm::HashingTrainingAlgorithm(
   // }
 
   // m_outputSeeds.initialize(m_cfg.outputSeeds);
-  m_outputAnnoyModel.initialize("OutputAnnoyModel");
+  // m_outputAnnoyModel.initialize("OutputAnnoyModel");
 }
 
-ActsExamples::ProcessCode ActsExamples::HashingTrainingAlgorithm::execute(
-    const ActsExamples::AlgorithmContext& ctx) const {
+using AnnoyMetric = Annoy::AngularEuclidean;
+//-DANNOYLIB_MULTITHREADED_BUILD
+//Annoy::AnnoyIndex<int, double, Annoy::Angular, Annoy::Kiss32Random, Annoy::AnnoyIndexMultiThreadedBuildPolicy> annoyModel = 
+//Annoy::AnnoyIndex<int, double, Annoy::Angular, Annoy::Kiss32Random, Annoy::AnnoyIndexMultiThreadedBuildPolicy>(f);
 
-  ACTS_DEBUG("event " << ctx.eventNumber);
+using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
+                  Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
+
+template <typename SpacePointContainer>
+AnnoyModel Acts::HashingTrainingAlgorithm<SpacePointContainer>::execute(
+    // const Acts::AlgorithmContext& ctx,
+    SpacePointContainer spacePoints) const {
+
+  // ACTS_DEBUG("event " << ctx.eventNumber);
 
   // const auto& spacePoints =
   //     ctx.eventStore.get<SimSpacePointContainer>(m_cfg.inputSpacePoints);
-  const auto& spacePoints = m_inputSpacePoints(ctx);
+  // const auto& spacePoints = m_inputSpacePoints(ctx);
 
   const unsigned int AnnoySeed = m_cfg.AnnoySeed;
   const int32_t f = m_cfg.f;
-
-  using AnnoyMetric = Annoy::AngularEuclidean;
-  //-DANNOYLIB_MULTITHREADED_BUILD
-  //Annoy::AnnoyIndex<int, double, Annoy::Angular, Annoy::Kiss32Random, Annoy::AnnoyIndexMultiThreadedBuildPolicy> annoyModel = 
-  //Annoy::AnnoyIndex<int, double, Annoy::Angular, Annoy::Kiss32Random, Annoy::AnnoyIndexMultiThreadedBuildPolicy>(f);
-
-  using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
-                    Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
 
   AnnoyModel annoyModel = AnnoyModel(f);
   
   using Scalar = Acts::ActsScalar;
 
   annoyModel.set_seed(AnnoySeed);
-  ACTS_DEBUG("f:" << f);
-  ACTS_DEBUG("annoyModel seed:" << annoyModel.get_seed());
+  // ACTS_DEBUG("f:" << f);
+  // ACTS_DEBUG("annoyModel seed:" << annoyModel.get_seed());
   
   unsigned int spacePointIndex = 0;
   // Add spacePoints parameters to Annoy
@@ -111,7 +116,7 @@ ActsExamples::ProcessCode ActsExamples::HashingTrainingAlgorithm::execute(
 	//annoyModel->save("precision.tree");
 	//std::cout << " Done" << std::endl;
 
-  m_outputAnnoyModel(ctx, std::move(annoyModel));
+  // m_outputAnnoyModel(ctx, std::move(annoyModel));
 
-  return ActsExamples::ProcessCode::SUCCESS;
+  return annoyModel;
 }

@@ -15,55 +15,32 @@
 
 #include "Acts/Seeding/Hashing/kissrandom.h"
 #include "Acts/Seeding/Hashing/annoylib_custom.h"
+#include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
+
+#include "Acts/Utilities/Logger.hpp"
 
 #include <cstddef>
 #include <string>
 
-namespace ActsExamples {
+namespace Acts {
 
 using AnnoyMetric = Annoy::AngularEuclidean;
 using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
                   Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
 
 /// Print hits within some geometric region-of-interest.
-class HashingTrainingAlgorithm final : public IAlgorithm {
-// class HashingTrainingAlgorithm {
+template <typename SpacePointContainer>
+class HashingTrainingAlgorithm {
  public:
-  struct Config {
-    /// Input space points collection
-    std::string inputSpacePoints;
-    /**
-    /// Input space point collections.
-    ///
-    /// We allow multiple space point collections to allow different parts of
-    /// the detector to use different algorithms for space point construction,
-    /// e.g. single-hit space points for pixel-like detectors or double-hit
-    /// space points for strip-like detectors.
-    std::vector<std::string> inputSpacePoints;
-    **/
-    /// Size of the buckets = number of hits in the bucket
-    unsigned int AnnoySeed = 123456789;
+  HashingTrainingAlgorithm(const HashingTrainingAlgorithmConfig& cfg, Acts::Logging::Level level);
 
-    /// Number of features to use
-    int32_t f = 1;
-  };
-
-  HashingTrainingAlgorithm(const Config& cfg, Acts::Logging::Level level);
-
-  ProcessCode execute(const AlgorithmContext& ctx) const final override;
+  AnnoyModel execute(SpacePointContainer spacePoints) const;
 
   // / Get readonly access to the config parameters
-  const Config& config() const { return m_cfg; }
+  const Acts::HashingTrainingAlgorithmConfig& config() const { return m_cfg; }
 
  private:
-  Config m_cfg;
-
-  // std::vector<std::unique_ptr<ReadDataHandle<SimSpacePointContainer>>>
-  //     m_inputSpacePoints{};
-    
-  ReadDataHandle<SimSpacePointContainer> m_inputSpacePoints{this, "inputSpacePoints"};
-
-  WriteDataHandle<AnnoyModel> m_outputAnnoyModel{this, "OutputAnnoyModel"};
+  HashingTrainingAlgorithmConfig m_cfg;
 };
 
-}  // namespace ActsExamples
+}  // namespace Acts

@@ -7,7 +7,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "Acts/Plugins/Python/Utilities.hpp"
-#include "Acts/Seeding/Hashing/include/HashingTraining.hpp"
+#include "Acts/Seeding/Hashing/HashingTraining.hpp"
 
 #include <memory>
 
@@ -16,7 +16,7 @@
 
 namespace py = pybind11;
 
-using namespace ActsExamples;
+// using namespace ActsExamples;
 using namespace Acts;
 
 namespace Acts::Python {
@@ -25,9 +25,9 @@ void addHashingTraining(Context& ctx) {
   auto mex = ctx.get("examples");
 
 
-  ACTS_PYTHON_DECLARE_ALGORITHM(
-      ActsExamples::HashingTrainingAlgorithm, mex, "HashingTrainingAlgorithm", inputSpacePoints,
-      AnnoySeed, f);
+  // ACTS_PYTHON_DECLARE_ALGORITHM(
+  //     ActsExamples::HashingTrainingAlgorithm, mex, "HashingTrainingAlgorithm", inputSpacePoints,
+  //     AnnoySeed, f);
 
   // {
   //   using Alg = ActsExamples::HashingTrainingAlgorithm;
