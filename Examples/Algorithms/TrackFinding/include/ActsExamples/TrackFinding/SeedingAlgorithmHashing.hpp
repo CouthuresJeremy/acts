@@ -15,6 +15,8 @@
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
 #include "Acts/Seeding/Hashing/HashingTraining.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
+#include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Logger.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
@@ -68,7 +70,7 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
     Acts::SpacePointGridOptions gridOptions;
     Acts::SeedFinderOptions seedFinderOptions;
     Acts::HashingAlgorithmConfig hashingConfig;
-    Acts::HashingTrainingAlgorithmConfig hashingTrainingConfig;
+    Acts::HashingTrainingConfig hashingTrainingConfig;
 
     // allow for different values of rMax in gridConfig and seedFinderConfig
     bool allowSeparateRMax = false;

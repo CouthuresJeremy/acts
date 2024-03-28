@@ -76,8 +76,6 @@ void addSvg(Context& ctx);
 void addObj(Context& ctx);
 void addOnnx(Context& ctx);
 void addOnnxNeuralCalibrator(Context& ctx);
-void addHashing(Context& ctx);
-void addHashingTraining(Context& ctx);
 
 }  // namespace Acts::Python
 
@@ -138,6 +136,4 @@ PYBIND11_MODULE(ActsPythonBindings, m) {
   addSvg(ctx);
   addOnnx(ctx);
   addOnnxNeuralCalibrator(ctx);
-  addHashing(ctx);
-  addHashingTraining(ctx);
 }

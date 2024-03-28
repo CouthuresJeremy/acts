@@ -55,3 +55,4 @@ class HashingAlgorithm {
 };
 
 }  // namespace Acts
+#include "Acts/Seeding/Hashing/HashingAlgorithm.ipp"

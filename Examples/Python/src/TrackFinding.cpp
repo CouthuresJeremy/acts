@@ -14,6 +14,8 @@
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SeedFinderGbtsConfig.hpp"
 #include "Acts/Seeding/SeedFinderOrthogonalConfig.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
+#include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/TrackFinding/MeasurementSelector.hpp"
 #include "Acts/Utilities/Logger.hpp"
@@ -199,6 +201,52 @@ void addTrackFinding(Context& ctx) {
   }
 
   {
+    using Config = Acts::HashingAlgorithmConfig;
+    auto c =
+        py::class_<Config>(m, "HashingAlgorithmConfig").def(py::init<>());
+    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
+    ACTS_PYTHON_MEMBER(bucketSize);
+    ACTS_PYTHON_MEMBER(zBins);
+    ACTS_PYTHON_MEMBER(phiBins);
+    ACTS_PYTHON_STRUCT_END();
+    patchKwargsConstructor(c);
+  }
+
+  {
+    using Config = Acts::HashingTrainingConfig;
+    auto c =
+        py::class_<Config>(m, "HashingTrainingConfig").def(py::init<>());
+    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
+    ACTS_PYTHON_MEMBER(AnnoySeed);
+    ACTS_PYTHON_MEMBER(f);
+    ACTS_PYTHON_STRUCT_END();
+    patchKwargsConstructor(c);
+  }
+
+  {
+    using Config = Acts::HashingAlgorithmConfig;
+    auto c =
+        py::class_<Config>(m, "HashingAlgorithmConfig").def(py::init<>());
+    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
+    ACTS_PYTHON_MEMBER(bucketSize);
+    ACTS_PYTHON_MEMBER(zBins);
+    ACTS_PYTHON_MEMBER(phiBins);
+    ACTS_PYTHON_STRUCT_END();
+    patchKwargsConstructor(c);
+  }
+
+  {
+    using Config = Acts::HashingTrainingConfig;
+    auto c =
+        py::class_<Config>(m, "HashingTrainingConfig").def(py::init<>());
+    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
+    ACTS_PYTHON_MEMBER(AnnoySeed);
+    ACTS_PYTHON_MEMBER(f);
+    ACTS_PYTHON_STRUCT_END();
+    patchKwargsConstructor(c);
+  }
+
+  {
     using Config = Acts::SeedFinderGbtsConfig<SimSpacePoint>;
     auto c = py::class_<Config>(m, "SeedFinderGbtsConfig").def(py::init<>());
     ACTS_PYTHON_STRUCT_BEGIN(c, Config);
@@ -273,7 +321,7 @@ void addTrackFinding(Context& ctx) {
       ActsExamples::SeedingAlgorithmHashing, mex, "SeedingAlgorithmHashing", inputSpacePoints,
       outputSeeds, seedFilterConfig, seedFinderConfig, seedFinderOptions, 
       gridConfig, gridOptions, allowSeparateRMax, zBinNeighborsTop,
-      zBinNeighborsBottom, numPhiNeighbors);
+      zBinNeighborsBottom, numPhiNeighbors, hashingConfig, hashingTrainingConfig);
 
   ACTS_PYTHON_DECLARE_ALGORITHM(ActsExamples::SeedingOrthogonalAlgorithm, mex,
                                 "SeedingOrthogonalAlgorithm", inputSpacePoints,

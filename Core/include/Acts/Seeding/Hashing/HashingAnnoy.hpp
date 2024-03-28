@@ -27,3 +27,4 @@ class HashingAnnoy {
     std::map<int, std::set<external_spacepoint_t>> m_bucketsSPMap;
 };
 }
+#include "Acts/Seeding/Hashing/HashingAnnoy.ipp"

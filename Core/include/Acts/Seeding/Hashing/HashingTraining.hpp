@@ -30,7 +30,7 @@ using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::K
 template <typename SpacePointContainer>
 class HashingTrainingAlgorithm {
  public:
-  HashingTrainingAlgorithm(const HashingTrainingAlgorithmConfig& cfg);
+  HashingTrainingAlgorithm(const HashingTrainingConfig& cfg);
 
   /**
    * @brief Destroy the object.
@@ -46,10 +46,11 @@ class HashingTrainingAlgorithm {
   AnnoyModel execute(SpacePointContainer spacePoints) const;
 
   // / Get readonly access to the config parameters
-  const Acts::HashingTrainingAlgorithmConfig& config() const { return m_cfg; }
+  const Acts::HashingTrainingConfig& config() const { return m_cfg; }
 
  private:
-  HashingTrainingAlgorithmConfig m_cfg;
+  HashingTrainingConfig m_cfg;
 };
 
 }  // namespace Acts
+#include "Acts/Seeding/Hashing/HashingTraining.ipp"

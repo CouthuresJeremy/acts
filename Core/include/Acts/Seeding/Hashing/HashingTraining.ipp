@@ -1,20 +1,16 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2023 CERN for the benefit of the Acts project
+// Copyright (C) 2024 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "Acts/Seeding/Hashing/HashingTraining.hpp"
-
-#include "Acts/Definitions/Units.hpp"
-#include "Acts/Definitions/Algebra.hpp"
-// #include "ActsExamples/Framework/WhiteBoard.hpp"
-
+namespace Acts {
+// constructor
 template <typename SpacePointContainer>
-Acts::HashingTrainingAlgorithm<SpacePointContainer>::HashingTrainingAlgorithm(
-    const Acts::HashingTrainingAlgorithmConfig& cfg)
+HashingTrainingAlgorithm<SpacePointContainer>::HashingTrainingAlgorithm(
+    const Acts::HashingTrainingConfig& cfg)
     : m_cfg(cfg) {
   if (m_cfg.f <= 0) {
     throw std::invalid_argument("Invalid f, f must be positive");
@@ -49,16 +45,16 @@ Acts::HashingTrainingAlgorithm<SpacePointContainer>::HashingTrainingAlgorithm(
   // m_outputAnnoyModel.initialize("OutputAnnoyModel");
 }
 
-using AnnoyMetric = Annoy::AngularEuclidean;
+// using AnnoyMetric = Annoy::AngularEuclidean;
 //-DANNOYLIB_MULTITHREADED_BUILD
 //Annoy::AnnoyIndex<int, double, Annoy::Angular, Annoy::Kiss32Random, Annoy::AnnoyIndexMultiThreadedBuildPolicy> annoyModel = 
 //Annoy::AnnoyIndex<int, double, Annoy::Angular, Annoy::Kiss32Random, Annoy::AnnoyIndexMultiThreadedBuildPolicy>(f);
 
-using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
-                  Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
+// using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
+//                   Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
 
 template <typename SpacePointContainer>
-AnnoyModel Acts::HashingTrainingAlgorithm<SpacePointContainer>::execute(
+AnnoyModel HashingTrainingAlgorithm<SpacePointContainer>::execute(
     // const Acts::AlgorithmContext& ctx,
     SpacePointContainer spacePoints) const {
 
@@ -73,7 +69,7 @@ AnnoyModel Acts::HashingTrainingAlgorithm<SpacePointContainer>::execute(
 
   AnnoyModel annoyModel = AnnoyModel(f);
   
-  using Scalar = Acts::ActsScalar;
+  using Scalar = ActsScalar;
 
   annoyModel.set_seed(AnnoySeed);
   // ACTS_DEBUG("f:" << f);
@@ -82,8 +78,8 @@ AnnoyModel Acts::HashingTrainingAlgorithm<SpacePointContainer>::execute(
   unsigned int spacePointIndex = 0;
   // Add spacePoints parameters to Annoy
   for (const auto& spacePoint : spacePoints) {
-    Scalar x = spacePoint.x() / Acts::UnitConstants::mm;
-    Scalar y = spacePoint.y() / Acts::UnitConstants::mm;
+    Scalar x = spacePoint->x() / Acts::UnitConstants::mm;
+    Scalar y = spacePoint->y() / Acts::UnitConstants::mm;
 
     // Helix transform
     Scalar phi = atan2(y, x);
@@ -93,7 +89,7 @@ AnnoyModel Acts::HashingTrainingAlgorithm<SpacePointContainer>::execute(
     // vec[0] = (double)argument;
     // vec[0] = (double)eta;
     if (f >= 2){
-        Scalar z = spacePoint.z() / Acts::UnitConstants::mm;
+        Scalar z = spacePoint->z() / Acts::UnitConstants::mm;
         Scalar r2 = x*x + y*y;
         Scalar rho = sqrt(r2 + z*z);
         Scalar theta = acos(z/rho);
@@ -119,3 +115,5 @@ AnnoyModel Acts::HashingTrainingAlgorithm<SpacePointContainer>::execute(
 
   return annoyModel;
 }
+
+}  // namespace Acts

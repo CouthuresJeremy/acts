@@ -1,33 +1,24 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2019 CERN for the benefit of the Acts project
+// Copyright (C) 2024 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
+// #include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
 #include "Acts/Seeding/Hashing/HashingAnnoy.hpp"
-// #include "Acts/Seeding/Hashing/HashingTraining.hpp"
 
-// #include "Acts/Digitization/PlanarModuleCluster.hpp"
-// #include "Acts/Utilities/Logger.hpp"
-// #include "ActsExamples/EventData/GeometryContainers.hpp"
-// #include "ActsExamples/EventData/Index.hpp"
-// #include "ActsExamples/EventData/SimParticle.hpp"
-// #include "ActsExamples/Framework/WhiteBoard.hpp"
-// #include "ActsExamples/Utilities/Range.hpp"
-// #include "ActsExamples/EventData/SimSpacePoint.hpp"
-
-#include "Acts/Seeding/Hashing/kissrandom.h"
-#include "Acts/Seeding/Hashing/annoylib_custom.h"
+// #include "Acts/Seeding/Hashing/kissrandom.h"
+// #include "Acts/Seeding/Hashing/annoylib_custom.h"
 
 #include <vector>
 
-
+namespace Acts {
+// constructor
 template <typename external_spacepoint_t, typename SpacePointContainer>
-Acts::HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::HashingAlgorithm(
-    const Acts::HashingAlgorithmConfig& cfg)
+HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::HashingAlgorithm(
+    const HashingAlgorithmConfig& cfg)
     : m_cfg(cfg) {
   if (m_cfg.bucketSize <= 0) {
     throw std::invalid_argument("Invalid bucket size");
@@ -58,8 +49,9 @@ Acts::HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::HashingAlgor
   // m_outputBuckets.initialize(m_cfg.outputBuckets);
 }
 
+// function to create the buckets of spacepoints.
 template <typename external_spacepoint_t, typename SpacePointContainer>
-std::vector<SpacePointContainer> Acts::HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
+std::vector<SpacePointContainer> HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
 // void Acts::HashingAlgorithm<SpacePointContainer>::execute(
     // const Acts::AlgorithmContext& ctx
     SpacePointContainer spacePoints,
@@ -90,7 +82,7 @@ std::vector<SpacePointContainer> Acts::HashingAlgorithm<external_spacepoint_t, S
   // ACTS_DEBUG("zBins:" << zBins);
   // ACTS_DEBUG("phiBins:" << phiBins);
 
-  Acts::HashingAnnoy AnnoyHashingInstance = new HashingAnnoy<external_spacepoint_t, SpacePointContainer>();
+  HashingAnnoy<external_spacepoint_t, SpacePointContainer>* AnnoyHashingInstance = new HashingAnnoy<external_spacepoint_t, SpacePointContainer>();
   AnnoyHashingInstance->ComputeSpacePointsBuckets(&annoyModel, spacePoints, bucketSize, zBins, phiBins);
 
   // ACTS_DEBUG("Loaded " << nSpacePoints << " Space Points");
@@ -110,7 +102,7 @@ std::vector<SpacePointContainer> Acts::HashingAlgorithm<external_spacepoint_t, S
     std::set<external_spacepoint_t> bucketSet = iterator->second;
     SpacePointContainer bucket;
     for (const auto& spacePoint : bucketSet) {
-      bucket.push_back(spacePoint);
+      bucket.push_back(&spacePoint);
     }
     buckets.push_back(bucket);
   }
@@ -120,3 +112,5 @@ std::vector<SpacePointContainer> Acts::HashingAlgorithm<external_spacepoint_t, S
 
   return buckets;  
 }
+
+}  // namespace Acts
