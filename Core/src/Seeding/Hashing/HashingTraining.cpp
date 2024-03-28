@@ -14,8 +14,7 @@
 
 template <typename SpacePointContainer>
 Acts::HashingTrainingAlgorithm<SpacePointContainer>::HashingTrainingAlgorithm(
-    const Acts::HashingTrainingAlgorithmConfig& cfg, 
-    Acts::Logging::Level level)
+    const Acts::HashingTrainingAlgorithmConfig& cfg)
     : m_cfg(cfg) {
   if (m_cfg.f <= 0) {
     throw std::invalid_argument("Invalid f, f must be positive");

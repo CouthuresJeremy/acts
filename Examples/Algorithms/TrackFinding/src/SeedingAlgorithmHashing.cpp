@@ -13,7 +13,8 @@
 #include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinder.hpp"
-// #include "Acts/Seeding/SeedFinderHashing.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
+#include "Acts/Seeding/Hashing/HashingTraining.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
@@ -51,7 +52,7 @@ ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
     }
 
     auto& handle = m_inputSpacePoints.emplace_back(
-        std::make_unique<ReadDataHandle<std::vector<SimSpacePointContainer>>>(
+        std::make_unique<ReadDataHandle<SimSpacePointContainer>>(
             this,
             "InputSpacePoints#" + std::to_string(m_inputSpacePoints.size())));
     handle->initialize(spName);
@@ -62,7 +63,7 @@ ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
 
   m_outputSeeds.initialize(m_cfg.outputSeeds);
 
-  if (m_cfg.gridConfig.rMax != m_cfg.seedFinderConfig.rMax and
+  if (m_cfg.gridConfig.rMax != m_cfg.seedFinderConfig.rMax &&
       m_cfg.allowSeparateRMax == false) {
     throw std::invalid_argument(
         "Inconsistent config rMax: using different values in gridConfig and "
@@ -153,7 +154,7 @@ ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
   if (!m_cfg.seedFinderConfig.zBinsCustomLooping.empty()) {
     // check if zBinsCustomLooping contains numbers from 1 to the total number
     // of bin in zBinEdges
-    for (size_t i = 1; i != m_cfg.gridConfig.zBinEdges.size(); i++) {
+    for (std::size_t i = 1; i != m_cfg.gridConfig.zBinEdges.size(); i++) {
       if (std::find(m_cfg.seedFinderConfig.zBinsCustomLooping.begin(),
                     m_cfg.seedFinderConfig.zBinsCustomLooping.end(),
                     i) == m_cfg.seedFinderConfig.zBinsCustomLooping.end()) {
@@ -204,6 +205,10 @@ ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
   m_cfg.seedFinderConfig.seedFilter =
       std::make_unique<Acts::SeedFilter<SimSpacePoint>>(m_cfg.seedFilterConfig);
   m_seedFinder = Acts::SeedFinder<SimSpacePoint>(m_cfg.seedFinderConfig);
+  m_Hashing = Acts::HashingAlgorithm<SimSpacePoint, std::vector<const SimSpacePoint*>>(
+      m_cfg.hashingConfig);
+  m_HashingTraining = Acts::HashingTrainingAlgorithm<std::vector<const SimSpacePoint*>>(
+      m_cfg.hashingTrainingConfig);
   // m_seedFinder = ActsExamples::SeedFinderSetAdapter<SimSpacePoint>(m_cfg.seedFinderConfig);
 }
 
@@ -214,13 +219,25 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
   // seeding looks for nearly straight lines in r/z plane
   // it uses a grid to limit the search to neighbouring grid cells
 
-  // construct the seeding tools
-  // auto bottomBinFinder = std::make_shared<Acts::BinFinder<SimSpacePoint>>(
-  //     Acts::BinFinder<SimSpacePoint>(m_cfg.zBinNeighborsBottom,
-  //                                   m_cfg.numPhiNeighbors));
-  // auto topBinFinder = std::make_shared<Acts::BinFinder<SimSpacePoint>>(
-  //     Acts::BinFinder<SimSpacePoint>(m_cfg.zBinNeighborsTop,
-  //                                   m_cfg.numPhiNeighbors));
+
+  // construct the combined input container of space point pointers from all
+  // configured input sources.
+  // pre-compute the total size required so we only need to allocate once
+  std::size_t nSpacePoints = 0;
+  for (const auto& isp : m_inputSpacePoints) {
+    nSpacePoints += (*isp)(ctx).size();
+  }
+
+  std::vector<const SimSpacePoint*> spacePointPtrs;
+  spacePointPtrs.reserve(nSpacePoints);
+  for (const auto& isp : m_inputSpacePoints) {
+    for (const SimSpacePoint& spacePoint : (*isp)(ctx)) {
+      // since the event store owns the space
+      // points, their pointers should be stable and
+      // we do not need to create local copies.
+      spacePointPtrs.push_back(&spacePoint);
+    }
+  }
 
   // covariance tool, extracts covariances per spacepoint as required
   auto extractGlobalQuantities =
@@ -231,29 +248,18 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
     return std::make_pair(position, covariance);
   };
 
-  // construct the combined input container of space point pointers from all
-  // configured input sources.
-  // pre-compute the total size required so we only need to allocate once
-  // size_t nSpacePoints = 0;
-  // for (const auto& isp : m_cfg.inputSpacePoints) {
-  //  nSpacePoints += ctx.eventStore.get<SimSpacePointContainer>(isp).size();
-  // }
+  // Hashing Training
+  Acts::AnnoyModel annoyModel = m_HashingTraining.execute(spacePointPtrs);
+  // Hashing
+  std::vector<std::vector<const SimSpacePoint*>> buckets = m_Hashing.execute(spacePointPtrs, annoyModel);
 
   // pre-compute the maximum size required so we only need to allocate once
   // doesn't combine the input containers of space point pointers
   size_t maxNSpacePoints = 0, inSpacePoints = 0;
-  // for (const auto& isp : m_cfg.inputSpacePoints) {
-  //   inSpacePoints = ctx.eventStore.get<SimSpacePointContainer>(isp).size();
-  //   if (inSpacePoints > maxNSpacePoints){
-  //     maxNSpacePoints = inSpacePoints;
-  //   }
-  // }
-  for (const auto& isp : m_inputSpacePoints) {
-    for (const SimSpacePointContainer& bucket: (*isp)(ctx)){
-      inSpacePoints = bucket.size();
-      if (inSpacePoints > maxNSpacePoints){
-        maxNSpacePoints = inSpacePoints;
-      }
+  for (const std::vector<const SimSpacePoint*>& bucket: buckets){
+    inSpacePoints = bucket.size();
+    if (inSpacePoints > maxNSpacePoints){
+      maxNSpacePoints = inSpacePoints;
     }
   }
 
@@ -264,93 +270,91 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
       maxNSpacePoints,
       m_cfg.seedFinderConfig.useDetailedDoubleMeasurementInfo);
 
-  std::vector<const SimSpacePoint*> spacePointPtrs;
-  //spacePointPtrs.reserve(nSpacePoints);
-  spacePointPtrs.reserve(maxNSpacePoints);
-  for (const auto& isp : m_inputSpacePoints) {
-    for (const SimSpacePointContainer& bucket: (*isp)(ctx)){
-      // construct the seeding tools
-      auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
-        m_cfg.gridConfig, m_cfg.gridOptions);
+  std::vector<const SimSpacePoint*> bucketSpacePointPtrs;
+  bucketSpacePointPtrs.reserve(maxNSpacePoints);
+  for (const std::vector<const SimSpacePoint*>& bucket: buckets){
+    // construct the seeding tools
+    auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
+      m_cfg.gridConfig, m_cfg.gridOptions);
 
-      // spacePointPtrs corresponds to a bucket
-      spacePointPtrs.clear();
+    // bucketSpacePointPtrs corresponds to a bucket
+    bucketSpacePointPtrs.clear();
 
-      state.spacePointData.clear();
+    state.spacePointData.clear();
 
-      // is there a way to store the pointers only once?
-      for (const auto& spacePoint :
-          bucket) {
-        // since the event store owns the space points, their pointers should be
-        // stable and we do not need to create local copies.
-        spacePointPtrs.push_back(&spacePoint);
-      }
+    // is there a way to store the pointers only once?
+    for (const auto& spacePoint :
+        bucket) {
+      // since the event store owns the space points, their pointers should be
+      // stable and we do not need to create local copies.
+      // bucketSpacePointPtrs.push_back(&spacePoint);
+      bucketSpacePointPtrs.push_back(spacePoint);
+    }
 
-      // extent used to store r range for middle spacepoint
-      Acts::Extent rRangeSPExtent;
-      // groups spacepoints
-      // could be moved before the space point containers loop if is updated dynamically 
-      auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
-        spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
-        m_bottomBinFinder, m_topBinFinder, std::move(grid), rRangeSPExtent,
-        m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
+    // extent used to store r range for middle spacepoint
+    Acts::Extent rRangeSPExtent;
+    // groups spacepoints
+    // could be moved before the space point containers loop if is updated dynamically 
+    auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
+      bucketSpacePointPtrs.begin(), bucketSpacePointPtrs.end(), extractGlobalQuantities,
+      m_bottomBinFinder, m_topBinFinder, std::move(grid), rRangeSPExtent,
+      m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
 
-      // safely clamp double to float
-      float up = Acts::clampValue<float>(
-          std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2);
+    // safely clamp double to float
+    float up = Acts::clampValue<float>(
+        std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2);
 
-      /// variable middle SP radial region of interest
-      const Acts::Range1D<float> rMiddleSPRange(
-          std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
-              m_cfg.seedFinderConfig.deltaRMiddleMinSPRange,
-          up - m_cfg.seedFinderConfig.deltaRMiddleMaxSPRange);
+    /// variable middle SP radial region of interest
+    const Acts::Range1D<float> rMiddleSPRange(
+        std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
+            m_cfg.seedFinderConfig.deltaRMiddleMinSPRange,
+        up - m_cfg.seedFinderConfig.deltaRMiddleMaxSPRange);
 
-      if (m_cfg.seedFinderConfig.useDetailedDoubleMeasurementInfo) {
-        for (std::size_t grid_glob_bin(0);
-            grid_glob_bin < spacePointsGrouping.grid().size(); ++grid_glob_bin) {
-          const auto& collection = spacePointsGrouping.grid().at(grid_glob_bin);
-          for (const auto& sp : collection) {
-            std::size_t index = sp->index();
+    if (m_cfg.seedFinderConfig.useDetailedDoubleMeasurementInfo) {
+      for (std::size_t grid_glob_bin(0);
+          grid_glob_bin < spacePointsGrouping.grid().size(); ++grid_glob_bin) {
+        const auto& collection = spacePointsGrouping.grid().at(grid_glob_bin);
+        for (const auto& sp : collection) {
+          std::size_t index = sp->index();
 
-            const float topHalfStripLength =
-                m_cfg.seedFinderConfig.getTopHalfStripLength(sp->sp());
-            const float bottomHalfStripLength =
-                m_cfg.seedFinderConfig.getBottomHalfStripLength(sp->sp());
-            const Acts::Vector3 topStripDirection =
-                m_cfg.seedFinderConfig.getTopStripDirection(sp->sp());
-            const Acts::Vector3 bottomStripDirection =
-                m_cfg.seedFinderConfig.getBottomStripDirection(sp->sp());
+          const float topHalfStripLength =
+              m_cfg.seedFinderConfig.getTopHalfStripLength(sp->sp());
+          const float bottomHalfStripLength =
+              m_cfg.seedFinderConfig.getBottomHalfStripLength(sp->sp());
+          const Acts::Vector3 topStripDirection =
+              m_cfg.seedFinderConfig.getTopStripDirection(sp->sp());
+          const Acts::Vector3 bottomStripDirection =
+              m_cfg.seedFinderConfig.getBottomStripDirection(sp->sp());
 
-            state.spacePointData.setTopStripVector(
-                index, topHalfStripLength * topStripDirection);
-            state.spacePointData.setBottomStripVector(
-                index, bottomHalfStripLength * bottomStripDirection);
-            state.spacePointData.setStripCenterDistance(
-                index, m_cfg.seedFinderConfig.getStripCenterDistance(sp->sp()));
-            state.spacePointData.setTopStripCenterPosition(
-                index, m_cfg.seedFinderConfig.getTopStripCenterPosition(sp->sp()));
-          }
+          state.spacePointData.setTopStripVector(
+              index, topHalfStripLength * topStripDirection);
+          state.spacePointData.setBottomStripVector(
+              index, bottomHalfStripLength * bottomStripDirection);
+          state.spacePointData.setStripCenterDistance(
+              index, m_cfg.seedFinderConfig.getStripCenterDistance(sp->sp()));
+          state.spacePointData.setTopStripCenterPosition(
+              index, m_cfg.seedFinderConfig.getTopStripCenterPosition(sp->sp()));
         }
       }
+    }
 
-      // run the seeding
-      // if add middle space point -> need to skip compat with previous tops and bottoms
-      // [middle, top] done pairs if no new bottom
-      // [bottom, middle, top] pairs other wise
+    // run the seeding
+    // if add middle space point -> need to skip compat with previous tops and bottoms
+    // [middle, top] done pairs if no new bottom
+    // [bottom, middle, top] pairs other wise
 
-      // [middle] not done for new middles
-      // [middle, top] of not done pairs for new tops
-      // [middle, top, bottom] for new bottoms
+    // [middle] not done for new middles
+    // [middle, top] of not done pairs for new tops
+    // [middle, top, bottom] for new bottoms
 
-      // if add top space point -> need to skip compat with previous middle and bottoms
-      // if add bottom space point -> need to skip compat with previous middle and tops
-      for (const auto [bottom, middle, top] : spacePointsGrouping) {
-        SetPolicy setPolicy(seedsSet);
-        GenericBackInserter back_inserter(setPolicy);
-        m_seedFinder.createSeedsForGroup(
-            m_cfg.seedFinderOptions, state, spacePointsGrouping.grid(),
-            back_inserter, bottom, middle, top, rMiddleSPRange);
-      }
+    // if add top space point -> need to skip compat with previous middle and bottoms
+    // if add bottom space point -> need to skip compat with previous middle and tops
+    for (const auto [bottom, middle, top] : spacePointsGrouping) {
+      SetPolicy setPolicy(seedsSet);
+      GenericBackInserter back_inserter(setPolicy);
+      m_seedFinder.createSeedsForGroup(
+          m_cfg.seedFinderOptions, state, spacePointsGrouping.grid(),
+          back_inserter, bottom, middle, top, rMiddleSPRange);
     }
   }
 

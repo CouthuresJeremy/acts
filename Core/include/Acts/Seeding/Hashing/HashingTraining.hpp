@@ -17,8 +17,6 @@
 #include "Acts/Seeding/Hashing/annoylib_custom.h"
 #include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
 
-#include "Acts/Utilities/Logger.hpp"
-
 #include <cstddef>
 #include <string>
 
@@ -32,7 +30,18 @@ using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::K
 template <typename SpacePointContainer>
 class HashingTrainingAlgorithm {
  public:
-  HashingTrainingAlgorithm(const HashingTrainingAlgorithmConfig& cfg, Acts::Logging::Level level);
+  HashingTrainingAlgorithm(const HashingTrainingAlgorithmConfig& cfg);
+
+  /**
+   * @brief Destroy the object.
+   */
+  ~HashingTrainingAlgorithm() = default;
+
+  HashingTrainingAlgorithm() = default;
+  HashingTrainingAlgorithm(const HashingTrainingAlgorithm<SpacePointContainer> &) =
+      delete;
+  HashingTrainingAlgorithm<SpacePointContainer> &operator=(
+      const HashingTrainingAlgorithm<SpacePointContainer> &) = default;
 
   AnnoyModel execute(SpacePointContainer spacePoints) const;
 

@@ -13,6 +13,8 @@
 #include "Acts/Seeding/SeedFinder.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
+#include "Acts/Seeding/Hashing/HashingTraining.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Logger.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
@@ -65,6 +67,8 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
     Acts::SpacePointGridConfig gridConfig;
     Acts::SpacePointGridOptions gridOptions;
     Acts::SeedFinderOptions seedFinderOptions;
+    Acts::HashingAlgorithmConfig hashingConfig;
+    Acts::HashingTrainingAlgorithmConfig hashingTrainingConfig;
 
     // allow for different values of rMax in gridConfig and seedFinderConfig
     bool allowSeparateRMax = false;
@@ -98,10 +102,12 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
   std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_topBinFinder;
   Config m_cfg;
 
-  std::vector<std::unique_ptr<ReadDataHandle<std::vector<SimSpacePointContainer>>>>
+  std::vector<std::unique_ptr<ReadDataHandle<SimSpacePointContainer>>>
       m_inputSpacePoints{};
 
   WriteDataHandle<SimSeedContainer> m_outputSeeds{this, "OutputSeeds"};
+  Acts::HashingAlgorithm<SimSpacePoint, std::vector<const SimSpacePoint*>> m_Hashing;
+  Acts::HashingTrainingAlgorithm<std::vector<const SimSpacePoint*>> m_HashingTraining;
 };
 
 }  // namespace ActsExamples

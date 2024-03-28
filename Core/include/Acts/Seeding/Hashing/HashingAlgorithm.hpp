@@ -34,6 +34,17 @@ class HashingAlgorithm {
  public:
   HashingAlgorithm(const HashingAlgorithmConfig& cfg);
 
+  /**
+   * @brief Destroy the object.
+   */
+  ~HashingAlgorithm() = default;
+
+  HashingAlgorithm() = default;
+  HashingAlgorithm(const HashingAlgorithm<external_spacepoint_t, SpacePointContainer> &) =
+      delete;
+  HashingAlgorithm<external_spacepoint_t, SpacePointContainer> &operator=(
+      const HashingAlgorithm<external_spacepoint_t, SpacePointContainer> &) = default;
+
   std::vector<SpacePointContainer> execute(SpacePointContainer spacePoints, AnnoyModel annoyModel) const;
 
   /// Get readonly access to the config parameters
