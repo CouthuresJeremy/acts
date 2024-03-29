@@ -6,11 +6,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// #include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
 #include "Acts/Seeding/Hashing/HashingAnnoy.hpp"
-
-// #include "Acts/Seeding/Hashing/kissrandom.h"
-// #include "Acts/Seeding/Hashing/annoylib_custom.h"
 
 #include <vector>
 
@@ -27,21 +23,6 @@ HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::HashingAlgorithm(
   //   throw std::invalid_argument("Missing space point input collections");
   // }
 
-  // m_inputSpacePoints.initialize(m_cfg.inputSpacePoints);
-
-  // m_inputAnnoyModel.initialize("OutputAnnoyModel");
-
-  // for (const auto& spName : m_cfg.inputSpacePoints) {
-  //   if (spName.empty()) {
-  //     throw std::invalid_argument("Invalid space point input collection");
-  //   }
-
-  //   auto& handle = m_inputSpacePoints.emplace_back(
-  //       std::make_unique<ReadDataHandle<SimSpacePointContainer>>(
-  //           this,
-  //           "InputSpacePoints#" + std::to_string(m_inputSpacePoints.size())));
-  //   handle->initialize(spName);
-  // }
   // if (m_cfg.outputBuckets.empty()) {
   //   throw std::invalid_argument("Missing buckets output collection");
   // }
@@ -51,19 +32,14 @@ HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::HashingAlgorithm(
 
 // function to create the buckets of spacepoints.
 template <typename external_spacepoint_t, typename SpacePointContainer>
-std::vector<SpacePointContainer> HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
-// void Acts::HashingAlgorithm<SpacePointContainer>::execute(
-    // const Acts::AlgorithmContext& ctx
-    SpacePointContainer spacePoints,
-    AnnoyModel annoyModel) const {
+void HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
+    SpacePointContainer& spacePoints,
+    AnnoyModel* annoyModel,
+    GenericBackInserter<SpacePointContainer> outIt) const {
 
-  using map_t = std::map<int, std::set<external_spacepoint_t>>;
+  using map_t = std::map<unsigned int, std::set<external_spacepoint_t>>;
 
   // ACTS_DEBUG("Start of HashingAlgorithm execute");
-
-  // const auto& spacePoints =
-  //     ctx.eventStore.get<SimSpacePointContainer>(m_cfg.inputSpacePoints);
-  // const auto& spacePoints = m_inputSpacePoints(ctx);
 
   const size_t nSpacePoints = spacePoints.size();
 
@@ -71,24 +47,17 @@ std::vector<SpacePointContainer> HashingAlgorithm<external_spacepoint_t, SpacePo
   const unsigned int zBins = m_cfg.zBins;
   const unsigned int phiBins = m_cfg.phiBins;
 
-  // ACTS_DEBUG("event " << ctx.eventNumber);
-
-
-  // const auto& annoyModel = ctx.eventStore.get<AnnoyModel>("annoyModel");
-  // const auto& annoyModel = m_inputAnnoyModel(ctx);
-
   // ACTS_DEBUG("annoyModel loaded seed:" << annoyModel.get_seed());
   // ACTS_DEBUG("bucketSize:" << bucketSize);
   // ACTS_DEBUG("zBins:" << zBins);
   // ACTS_DEBUG("phiBins:" << phiBins);
 
   HashingAnnoy<external_spacepoint_t, SpacePointContainer>* AnnoyHashingInstance = new HashingAnnoy<external_spacepoint_t, SpacePointContainer>();
-  AnnoyHashingInstance->ComputeSpacePointsBuckets(&annoyModel, spacePoints, bucketSize, zBins, phiBins);
+  AnnoyHashingInstance->ComputeSpacePointsBuckets(annoyModel, spacePoints, bucketSize, zBins, phiBins);
 
   // ACTS_DEBUG("Loaded " << nSpacePoints << " Space Points");
 
   map_t bucketsSPMap = AnnoyHashingInstance->m_bucketsSPMap;
-  std::vector<SpacePointContainer> buckets;
   unsigned int nBuckets = (unsigned int)bucketsSPMap.size();
   // ACTS_DEBUG("n_buckets:" << nBuckets);
   if (nBuckets > nSpacePoints){
@@ -101,16 +70,15 @@ std::vector<SpacePointContainer> HashingAlgorithm<external_spacepoint_t, SpacePo
     }
     std::set<external_spacepoint_t> bucketSet = iterator->second;
     SpacePointContainer bucket;
-    for (const auto& spacePoint : bucketSet) {
-      bucket.push_back(&spacePoint);
+    for (external_spacepoint_t spacePoint : bucketSet) {
+      bucket.push_back(spacePoint);
     }
-    buckets.push_back(bucket);
+    outIt = SpacePointContainer{bucket};
   }
+  // std::vector<SpacePointContainer> buckets;
   // m_outputBuckets(ctx, std::move(buckets));
 
   // ACTS_DEBUG("End of HashingAlgorithm execute");
-
-  return buckets;  
 }
 
 }  // namespace Acts

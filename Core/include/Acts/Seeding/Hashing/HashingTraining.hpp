@@ -1,6 +1,6 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2023 CERN for the benefit of the Acts project
+// Copyright (C) 2024 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "Acts/Definitions/Units.hpp"
 #include "Acts/Seeding/Hashing/kissrandom.h"
 #include "Acts/Seeding/Hashing/annoylib_custom.h"
 #include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
@@ -21,8 +20,6 @@ namespace Acts {
 using AnnoyMetric = Annoy::AngularEuclidean;
 using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
                   Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
-
-/// Print hits within some geometric region-of-interest.
 template <typename SpacePointContainer>
 class HashingTrainingAlgorithm {
  public:

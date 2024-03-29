@@ -6,16 +6,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
-// #include "Acts/Seeding/Hashing/HashingAnnoy.hpp"
-// #include "Acts/Seeding/Hashing/HashingTraining.hpp"
-
-// #include "Acts/Definitions/Units.hpp"
-// #include "Acts/Seeding/Hashing/kissrandom.h"
-// #include "Acts/Seeding/Hashing/annoylib_custom.h"
-
-// #include "Acts/Definitions/Algebra.hpp"
-
 #include <map>
 #include <vector>
 #include <set>
@@ -79,7 +69,7 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
   }
 
   if (zBins > 0){
-    std::set<external_spacepoint_t> bucketsSetSPMap[zBins];
+    // Loop over spacePoints
     for(unsigned int spacePointIndex=0; spacePointIndex < spacePoints.size(); spacePointIndex++){
       external_spacepoint_t spacePoint = spacePoints[spacePointIndex];
       Scalar x = spacePoint->x() / Acts::UnitConstants::mm;
@@ -98,16 +88,12 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
       }
 
       int binIndex = GetBinIndex(r2, z, zBins);
-      if (binIndex < 0 || (unsigned int)binIndex >= zBins){
+      if (binIndex < 0 || (unsigned int)binIndex >= nBins){
         throw std::runtime_error("binIndex outside of bins covering");
       }
-      
-      // std::cout << "Here1\n";
-      std::set<external_spacepoint_t> *bucketSet;
-      bucketSet = &bucketsSetSPMap[binIndex];
 
-      // SimSpacePointContainer bucket;
-      std::vector<unsigned int> bucket_ids;
+      static thread_local std::vector<unsigned int> bucket_ids;
+      bucket_ids.clear();
 
       /// Get the bucketSize closests spacePoints
       annoyModel->get_nns_by_item(spacePointIndex, bucketSize, -1, &bucket_ids, nullptr);
@@ -120,22 +106,12 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
       if (bucketSize != bucket_ids.size()){
          std::cout << "bucketSize: " << bucketSize << " returned: " << bucket_ids.size() << "\n";
       }
-      for(const auto& bucketSpacePointIndex : bucket_ids){
-          bucketSet->insert(*(spacePoints.at(bucketSpacePointIndex)));
-      }
-      
-      // m_bucketsSPMap[binIndex] = bucketSet;
-    }
-
-    unsigned int n_buckets = 0;
-    for (int binIndex = 0; (unsigned int)binIndex < zBins; binIndex++){
-      if (bucketsSetSPMap[binIndex].size() > 0){
-        m_bucketsSPMap[n_buckets] = bucketsSetSPMap[binIndex];
-        n_buckets++;
+      for(const unsigned int& bucketSpacePointIndex : bucket_ids){
+          bucketsSetSPMap[(unsigned int)binIndex].insert(spacePoints.at(bucketSpacePointIndex));
       }
     }
   } else if (phiBins > 0) {
-    std::set<external_spacepoint_t> bucketsSetSPMap[phiBins];
+    // Loop over spacePoints
     for(unsigned int spacePointIndex=0; spacePointIndex < spacePoints.size(); spacePointIndex++){
       external_spacepoint_t spacePoint = spacePoints[spacePointIndex];
       Scalar x = spacePoint->x() / Acts::UnitConstants::mm;
@@ -156,15 +132,10 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
       Scalar phi = atan2(y, x);
 
       int binIndex = GetBinIndexPhi(phi, phiBins);
-      if (binIndex < 0 || (unsigned int)binIndex >= phiBins){
+      if (binIndex < 0 || (unsigned int)binIndex >= nBins){
         throw std::runtime_error("binIndex outside of bins covering");
       }
-      
-      // std::cout << "Here1\n";
-      std::set<external_spacepoint_t> *bucketSet;
-      bucketSet = &bucketsSetSPMap[binIndex];
 
-      // SimSpacePointContainer bucket;
       std::vector<unsigned int> bucket_ids;
 
       /// Get the bucketSize closests spacePoints
@@ -178,25 +149,22 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
       if (bucketSize != bucket_ids.size()){
          std::cout << "bucketSize: " << bucketSize << " returned: " << bucket_ids.size() << "\n";
       }
-      for(const auto& bucketSpacePointIndex : bucket_ids){
-          bucketSet->insert(*(spacePoints.at(bucketSpacePointIndex)));
-      }
-      
-      // m_bucketsSPMap[binIndex] = bucketSet;
-    }
-
-    unsigned int n_buckets = 0;
-    for (int binIndex = 0; (unsigned int)binIndex < phiBins; binIndex++){
-      if (bucketsSetSPMap[binIndex].size() > 0){
-        m_bucketsSPMap[n_buckets] = bucketsSetSPMap[binIndex];
-        n_buckets++;
+      for(const unsigned int& bucketSpacePointIndex : bucket_ids){
+          bucketsSetSPMap[(unsigned int)binIndex].insert(spacePoints.at(bucketSpacePointIndex));
       }
     }
   }
   else {
+    throw std::runtime_error("No bins defined");
   }
 
-  // return Acts::ProcessCode::SUCCESS;
+  unsigned int n_buckets = 0;
+  for (unsigned int binIndex = 0; binIndex < nBins; binIndex++){
+    if (bucketsSetSPMap[binIndex].size() > 0){
+      m_bucketsSPMap[n_buckets] = bucketsSetSPMap[binIndex];
+      n_buckets++;
+    }
+  }
 }
 
 }  // namespace Acts

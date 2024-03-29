@@ -205,11 +205,10 @@ ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
   m_cfg.seedFinderConfig.seedFilter =
       std::make_unique<Acts::SeedFilter<SimSpacePoint>>(m_cfg.seedFilterConfig);
   m_seedFinder = Acts::SeedFinder<SimSpacePoint>(m_cfg.seedFinderConfig);
-  m_Hashing = Acts::HashingAlgorithm<SimSpacePoint, std::vector<const SimSpacePoint*>>(
+  m_Hashing = Acts::HashingAlgorithm<const SimSpacePoint*, std::vector<const SimSpacePoint*>>(
       m_cfg.hashingConfig);
   m_HashingTraining = Acts::HashingTrainingAlgorithm<std::vector<const SimSpacePoint*>>(
       m_cfg.hashingTrainingConfig);
-  // m_seedFinder = ActsExamples::SeedFinderSetAdapter<SimSpacePoint>(m_cfg.seedFinderConfig);
 }
 
 ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
@@ -228,7 +227,9 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
     nSpacePoints += (*isp)(ctx).size();
   }
 
-  std::vector<const SimSpacePoint*> spacePointPtrs;
+  using SpacePointPtrVector = std::vector<const SimSpacePoint*>;
+
+  SpacePointPtrVector spacePointPtrs;
   spacePointPtrs.reserve(nSpacePoints);
   for (const auto& isp : m_inputSpacePoints) {
     for (const SimSpacePoint& spacePoint : (*isp)(ctx)) {
@@ -251,52 +252,44 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
   // Hashing Training
   Acts::AnnoyModel annoyModel = m_HashingTraining.execute(spacePointPtrs);
   // Hashing
-  std::vector<std::vector<const SimSpacePoint*>> buckets = m_Hashing.execute(spacePointPtrs, annoyModel);
+  static thread_local std::vector<SpacePointPtrVector> buckets;
+  buckets.clear();
+  VectorPolicy bucketsPolicy(buckets);
+  GenericBackInserter buckets_back_inserter(bucketsPolicy);
+  m_Hashing.execute(spacePointPtrs, 
+                    &annoyModel, 
+                    buckets_back_inserter);
 
   // pre-compute the maximum size required so we only need to allocate once
   // doesn't combine the input containers of space point pointers
   size_t maxNSpacePoints = 0, inSpacePoints = 0;
-  for (const std::vector<const SimSpacePoint*>& bucket: buckets){
+  for (const SpacePointPtrVector& bucket: buckets){
     inSpacePoints = bucket.size();
     if (inSpacePoints > maxNSpacePoints){
       maxNSpacePoints = inSpacePoints;
     }
   }
 
-  static thread_local std::set<Acts::Seed<ActsExamples::SimSpacePoint>> seedsSet;
+  static thread_local std::set<ActsExamples::SimSeed> seedsSet;
   seedsSet.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
   state.spacePointData.resize(
       maxNSpacePoints,
       m_cfg.seedFinderConfig.useDetailedDoubleMeasurementInfo);
 
-  std::vector<const SimSpacePoint*> bucketSpacePointPtrs;
-  bucketSpacePointPtrs.reserve(maxNSpacePoints);
-  for (const std::vector<const SimSpacePoint*>& bucket: buckets){
+  for (const SpacePointPtrVector& bucket: buckets){
     // construct the seeding tools
     auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
       m_cfg.gridConfig, m_cfg.gridOptions);
 
-    // bucketSpacePointPtrs corresponds to a bucket
-    bucketSpacePointPtrs.clear();
-
     state.spacePointData.clear();
-
-    // is there a way to store the pointers only once?
-    for (const auto& spacePoint :
-        bucket) {
-      // since the event store owns the space points, their pointers should be
-      // stable and we do not need to create local copies.
-      // bucketSpacePointPtrs.push_back(&spacePoint);
-      bucketSpacePointPtrs.push_back(spacePoint);
-    }
 
     // extent used to store r range for middle spacepoint
     Acts::Extent rRangeSPExtent;
     // groups spacepoints
     // could be moved before the space point containers loop if is updated dynamically 
     auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
-      bucketSpacePointPtrs.begin(), bucketSpacePointPtrs.end(), extractGlobalQuantities,
+      bucket.begin(), bucket.end(), extractGlobalQuantities,
       m_bottomBinFinder, m_topBinFinder, std::move(grid), rRangeSPExtent,
       m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
 
@@ -366,7 +359,8 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
 
   static thread_local SimSeedContainer seeds;
   seeds.clear();
-  for (const auto& seed : seedsSet) {
+  seeds.reserve(seedsSet.size());
+  for (const ActsExamples::SimSeed& seed : seedsSet) {
     seeds.push_back(seed);
   }
 

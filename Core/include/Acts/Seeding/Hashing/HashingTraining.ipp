@@ -15,33 +15,10 @@ HashingTrainingAlgorithm<SpacePointContainer>::HashingTrainingAlgorithm(
   if (m_cfg.f <= 0) {
     throw std::invalid_argument("Invalid f, f must be positive");
   }
-  // if (m_cfg.inputSpacePoints.empty()) {
-  //   throw std::invalid_argument("Missing space points input collections");
-  // }
   if (m_cfg.AnnoySeed <= 0) {
     throw std::invalid_argument("Invalid Annoy random seed, Annoy random seed must be positive");
   }
-  // if (m_cfg.inputSpacePoints.empty()) {
-  //   throw std::invalid_argument("Missing space point input collections");
-  // }
-  // m_inputSpacePoints.initialize(m_cfg.inputSpacePoints);
 
-  // for (const auto& spName : m_cfg.inputSpacePoints) {
-  //   if (spName.empty()) {
-  //     throw std::invalid_argument("Invalid space point input collection");
-  //   }
-
-  //   auto& handle = m_inputSpacePoints.emplace_back(
-  //       std::make_unique<ReadDataHandle<SimSpacePointContainer>>(
-  //           this,
-  //           "InputSpacePoints#" + std::to_string(m_inputSpacePoints.size())));
-  //   handle->initialize(spName);
-  // }
-  // if (m_cfg.outputSeeds.empty()) {
-  //   throw std::invalid_argument("Missing seeds output collection");
-  // }
-
-  // m_outputSeeds.initialize(m_cfg.outputSeeds);
   // m_outputAnnoyModel.initialize("OutputAnnoyModel");
 }
 
@@ -55,14 +32,9 @@ HashingTrainingAlgorithm<SpacePointContainer>::HashingTrainingAlgorithm(
 
 template <typename SpacePointContainer>
 AnnoyModel HashingTrainingAlgorithm<SpacePointContainer>::execute(
-    // const Acts::AlgorithmContext& ctx,
     SpacePointContainer spacePoints) const {
 
   // ACTS_DEBUG("event " << ctx.eventNumber);
-
-  // const auto& spacePoints =
-  //     ctx.eventStore.get<SimSpacePointContainer>(m_cfg.inputSpacePoints);
-  // const auto& spacePoints = m_inputSpacePoints(ctx);
 
   const unsigned int AnnoySeed = m_cfg.AnnoySeed;
   const int32_t f = m_cfg.f;

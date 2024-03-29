@@ -108,7 +108,7 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
       m_inputSpacePoints{};
 
   WriteDataHandle<SimSeedContainer> m_outputSeeds{this, "OutputSeeds"};
-  Acts::HashingAlgorithm<SimSpacePoint, std::vector<const SimSpacePoint*>> m_Hashing;
+  Acts::HashingAlgorithm<const SimSpacePoint*, std::vector<const SimSpacePoint*>> m_Hashing;
   Acts::HashingTrainingAlgorithm<std::vector<const SimSpacePoint*>> m_HashingTraining;
 };
 

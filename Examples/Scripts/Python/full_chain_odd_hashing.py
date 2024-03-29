@@ -455,7 +455,6 @@ s.addWriter(
 from typing import Optional, Union, List
 
 def addHashing(
-    s: acts.examples.Sequencer,
     bucketSize: Optional[int]=10,
     AnnoySeed: Optional[int]=123456789,
     zBins: Optional[int]=0,
@@ -488,50 +487,31 @@ def addHashing(
 
 
     # Hashing
-    hashingTrainingCfg = acts.examples.HashingTrainingAlgorithm.Config(
-        inputSpacePoints="spacepoints",
+    hashingTrainingCfg = acts.HashingTrainingConfig(
         AnnoySeed=AnnoySeed,
         f=f,
     )
 
-    # addHashingTraining
-    hashingTrainingAlg = acts.examples.HashingTrainingAlgorithm(hashingTrainingCfg, 
-                                                                # acts.logging.VERBOSE
-                                                                s.config.logLevel
-                                                                )
-
-    s.addAlgorithm(hashingTrainingAlg)
-
-    hashingCfg = acts.examples.HashingAlgorithm.Config(
-        inputSpacePoints="spacepoints",
+    hashingCfg = acts.HashingAlgorithmConfig(
         bucketSize=bucketSize,
         zBins=zBins,
         phiBins=phiBins,
-        outputBuckets="OutputBuckets"
     )
 
-    hashingAlg = acts.examples.HashingAlgorithm(hashingCfg, 
-                                                # acts.logging.VERBOSE
-                                                s.config.logLevel
-                                                )
-
-    s.addAlgorithm(hashingAlg)
-
-    return s
+    return hashingTrainingCfg, hashingCfg
 
 if doHashing:
     # for now hashing only use space points and not clusters
     print("***> addHashing")
-    s = addHashing(
-        s,
+    hashingTrainingCfg, hashingCfg = addHashing(
         bucketSize=bucketSize,
         AnnoySeed=AnnoySeed,
-        metric=config.metric,
         zBins=zBins,
         phiBins=phiBins,
+        metric=config.metric,
     )
 
-    if saveFiles:
+    if saveFiles and False: # TODO: fix not implemented bucket saving in sequencer (internal variable)
         s.addWriter(
             acts.examples.CsvBucketWriter(
                 level=customLogLevel(),
@@ -667,7 +647,7 @@ gridOptions = acts.SpacePointGridOptions(
 
 if config.seedingAlgorithm == SeedingAlgorithm.Default:
     logger.info("Using default seeding")
-    logLevel = acts.examples.defaultLogging(s, logLevel)()
+    # logLevel = acts.examples.defaultLogging(s, logLevel)()
 
     seedingAlg = acts.examples.SeedingAlgorithm(
         level=logLevel,
@@ -689,19 +669,15 @@ if config.seedingAlgorithm == SeedingAlgorithm.Default:
 
 elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
     # assert(doHashing)
-    bucket_list = []
     # if doHashing:
     #     bucketSP = "hashingSPBucket_{}".format(0)
     # else:
     #     bucketSP = "spacepoints"
-    bucketSP = "buckets"
-    bucketSP = "OutputBuckets"
-    bucket_list.append(bucketSP)
     logger.info("Using Hashing seeding")
 
     seedingAlg = acts.examples.SeedingAlgorithmHashing(
         level=logLevel,
-        inputSpacePoints=bucket_list,
+        inputSpacePoints=["spacepoints"],
         outputSeeds="seeds",
         **acts.examples.defaultKWArgs(
             allowSeparateRMax=seedingAlgorithmConfigArg.allowSeparateRMax,
@@ -714,6 +690,8 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
         seedFilterConfig=seedFilterConfig,
         seedFinderConfig=seedFinderConfig,
         seedFinderOptions=seedFinderOptions,
+        hashingConfig=hashingCfg,
+        hashingTrainingConfig=hashingTrainingCfg,
     )
     s.addAlgorithm(seedingAlg)
 else:
@@ -809,13 +787,13 @@ if outputDirRoot is not None:
     # #         )
     # #     )
 
-    s.addWriter(
-        acts.examples.RootSeedWriter(
-            level=customLogLevel(),
-            inputSeeds=seeds,
-            filePath=str(outputDirRoot / "seeds.root")
-        )
-    )
+    # s.addWriter(
+    #     acts.examples.RootSeedWriter(
+    #         level=customLogLevel(),
+    #         inputSeeds=seeds,
+    #         filePath=str(outputDirRoot / "seeds.root")
+    #     )
+    # )
 
 # addCKFTracks(
 #     s,
@@ -828,21 +806,21 @@ if outputDirRoot is not None:
 #     writeTrajectories=False,
 # )
 
-addCKFTracks(
-    s,
-    trackingGeometry,
-    field,
-    TrackSelectorConfig(
-        pt=(1.0 * u.GeV, None),
-        absEta=(None, eta),
-        #loc0=(-4.0 * u.mm, 4.0 * u.mm),
-        nMeasurementsMin=6,
-    ),
-    outputDirRoot=outputDir,
-    # writeCovMat=True,
-    writeTrajectories=False,
-    # outputDirCsv=outputDir,
-)
+# addCKFTracks(
+#     s,
+#     trackingGeometry,
+#     field,
+#     TrackSelectorConfig(
+#         pt=(1.0 * u.GeV, None),
+#         absEta=(None, eta),
+#         #loc0=(-4.0 * u.mm, 4.0 * u.mm),
+#         nMeasurementsMin=6,
+#     ),
+#     outputDirRoot=outputDir,
+#     # writeCovMat=True,
+#     writeTrajectories=False,
+#     # outputDirCsv=outputDir,
+# )
 
 # write track summary from CKF
 # trackSummaryWriter = acts.examples.RootTrajectorySummaryWriter(
