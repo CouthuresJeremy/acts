@@ -19,15 +19,6 @@ HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::HashingAlgorithm(
   if (m_cfg.bucketSize <= 0) {
     throw std::invalid_argument("Invalid bucket size");
   }
-  // if (m_cfg.inputSpacePoints.empty()) {
-  //   throw std::invalid_argument("Missing space point input collections");
-  // }
-
-  // if (m_cfg.outputBuckets.empty()) {
-  //   throw std::invalid_argument("Missing buckets output collection");
-  // }
-
-  // m_outputBuckets.initialize(m_cfg.outputBuckets);
 }
 
 // function to create the buckets of spacepoints.
@@ -75,8 +66,6 @@ void HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
     }
     outIt = SpacePointContainer{bucket};
   }
-  // std::vector<SpacePointContainer> buckets;
-  // m_outputBuckets(ctx, std::move(buckets));
 
   // ACTS_DEBUG("End of HashingAlgorithm execute");
 }

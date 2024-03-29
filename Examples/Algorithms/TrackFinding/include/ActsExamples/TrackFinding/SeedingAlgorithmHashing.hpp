@@ -63,6 +63,8 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
     std::vector<std::string> inputSpacePoints;
     /// Output track seed collection.
     std::string outputSeeds;
+    /// Output space point buckets.
+    std::string outputBuckets;
 
     Acts::SeedFilterConfig seedFilterConfig;
     Acts::SeedFinderConfig<SimSpacePoint> seedFinderConfig;
@@ -108,6 +110,7 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
       m_inputSpacePoints{};
 
   WriteDataHandle<SimSeedContainer> m_outputSeeds{this, "OutputSeeds"};
+  WriteDataHandle<std::vector<SimSpacePointContainer>> m_outputBuckets{this, "OutputBuckets"};
   Acts::HashingAlgorithm<const SimSpacePoint*, std::vector<const SimSpacePoint*>> m_Hashing;
   Acts::HashingTrainingAlgorithm<std::vector<const SimSpacePoint*>> m_HashingTraining;
 };

@@ -511,15 +511,6 @@ if doHashing:
         metric=config.metric,
     )
 
-    if saveFiles and False: # TODO: fix not implemented bucket saving in sequencer (internal variable)
-        s.addWriter(
-            acts.examples.CsvBucketWriter(
-                level=customLogLevel(),
-                inputBuckets="OutputBuckets",
-                outputDir=str(outputDirRoot),
-            )
-        )
-
 # From addStandardSeeding
 seedFinderConfig = acts.SeedFinderConfig(
     **acts.examples.defaultKWArgs(
@@ -679,6 +670,7 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
         level=logLevel,
         inputSpacePoints=["spacepoints"],
         outputSeeds="seeds",
+        outputBuckets="buckets",
         **acts.examples.defaultKWArgs(
             allowSeparateRMax=seedingAlgorithmConfigArg.allowSeparateRMax,
             zBinNeighborsTop=seedingAlgorithmConfigArg.zBinNeighborsTop,
@@ -694,6 +686,15 @@ elif config.seedingAlgorithm == SeedingAlgorithm.HashingSeeding:
         hashingTrainingConfig=hashingTrainingCfg,
     )
     s.addAlgorithm(seedingAlg)
+
+    if saveFiles:
+        s.addWriter(
+            acts.examples.CsvBucketWriter(
+                level=customLogLevel(),
+                inputBuckets=seedingAlg.config.outputBuckets,
+                outputDir=str(outputDirRoot),
+            )
+        )
 else:
     logger.fatal("unknown seedingAlgorithm %s", config.seedingAlgorithm)
     exit(f"unknown seedingAlgorithm {config.seedingAlgorithm}")
@@ -787,13 +788,13 @@ if outputDirRoot is not None:
     # #         )
     # #     )
 
-    # s.addWriter(
-    #     acts.examples.RootSeedWriter(
-    #         level=customLogLevel(),
-    #         inputSeeds=seeds,
-    #         filePath=str(outputDirRoot / "seeds.root")
-    #     )
-    # )
+    s.addWriter(
+        acts.examples.RootSeedWriter(
+            level=customLogLevel(),
+            inputSeeds=seeds,
+            filePath=str(outputDirRoot / "seeds.root")
+        )
+    )
 
 # addCKFTracks(
 #     s,
@@ -806,21 +807,21 @@ if outputDirRoot is not None:
 #     writeTrajectories=False,
 # )
 
-# addCKFTracks(
-#     s,
-#     trackingGeometry,
-#     field,
-#     TrackSelectorConfig(
-#         pt=(1.0 * u.GeV, None),
-#         absEta=(None, eta),
-#         #loc0=(-4.0 * u.mm, 4.0 * u.mm),
-#         nMeasurementsMin=6,
-#     ),
-#     outputDirRoot=outputDir,
-#     # writeCovMat=True,
-#     writeTrajectories=False,
-#     # outputDirCsv=outputDir,
-# )
+addCKFTracks(
+    s,
+    trackingGeometry,
+    field,
+    TrackSelectorConfig(
+        pt=(1.0 * u.GeV, None),
+        absEta=(None, eta),
+        #loc0=(-4.0 * u.mm, 4.0 * u.mm),
+        nMeasurementsMin=6,
+    ),
+    outputDirRoot=outputDir,
+    # writeCovMat=True,
+    writeTrajectories=False,
+    # outputDirCsv=outputDir,
+)
 
 # write track summary from CKF
 # trackSummaryWriter = acts.examples.RootTrajectorySummaryWriter(
