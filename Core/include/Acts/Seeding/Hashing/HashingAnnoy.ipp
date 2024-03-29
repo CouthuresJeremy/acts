@@ -30,7 +30,7 @@ bool LayerSelection(double r2, double z){
 
 namespace Acts {
 int GetBinIndex(double, double z, unsigned int zBins){
-  using Scalar = ActsScalar;
+using Scalar = Acts::ActsScalar;
   Scalar binSize = 1100.0/zBins;
   int binIndex = (z - (-550) + 0.5*binSize)/binSize;
   // int binIndex = (z - (-550))/binSize;
@@ -39,7 +39,7 @@ int GetBinIndex(double, double z, unsigned int zBins){
 }
 
 int GetBinIndexPhi(double phi, unsigned int phiBins){
-  using Scalar = ActsScalar;
+  using Scalar = Acts::ActsScalar;
   Scalar binSize = 2*M_PI/phiBins;
   int binIndex = (phi+M_PI)/binSize;
   return binIndex;
@@ -56,19 +56,35 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
     const unsigned int bucketSize,
     const unsigned int zBins,
     const unsigned int phiBins) {
-  using Scalar = ActsScalar;
+  using Scalar = Acts::ActsScalar;
 
-	//******************************************************
-  // std::cout << annoyModel->get_seed() << "\n";
-  // std::cout << annoyModel->get_n_items() << "\n";
+  static thread_local std::vector<std::set<external_spacepoint_t>> bucketsSetSPMap;
+  bucketsSetSPMap.clear();
+  
+  unsigned int nBins = 0;
+  if (zBins > 0){
+    nBins = zBins;
+  } else if (phiBins > 0){
+    nBins = phiBins;
+  } else {
+    throw std::runtime_error("No bins defined");
+  }
+  bucketsSetSPMap.reserve(nBins);
+
+  // Create the set of spacePoints for each bucket
+  for (unsigned int binIndex = 0; binIndex < nBins; binIndex++){
+    static thread_local std::set<external_spacepoint_t> bucket;
+    bucket.clear();
+    bucketsSetSPMap.push_back(bucket);
+  }
 
   if (zBins > 0){
     std::set<external_spacepoint_t> bucketsSetSPMap[zBins];
     for(unsigned int spacePointIndex=0; spacePointIndex < spacePoints.size(); spacePointIndex++){
-      auto spacePoint = spacePoints[spacePointIndex];
-      Scalar x = spacePoint->x() / UnitConstants::mm;
-      Scalar y = spacePoint->y() / UnitConstants::mm;
-      Scalar z = spacePoint->z() / UnitConstants::mm;
+      external_spacepoint_t spacePoint = spacePoints[spacePointIndex];
+      Scalar x = spacePoint->x() / Acts::UnitConstants::mm;
+      Scalar y = spacePoint->y() / Acts::UnitConstants::mm;
+      Scalar z = spacePoint->z() / Acts::UnitConstants::mm;
       //Scalar tt = hit.fourPosition().w() / Acts::UnitConstants::ns;
 
       // Helix transform
@@ -121,10 +137,10 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
   } else if (phiBins > 0) {
     std::set<external_spacepoint_t> bucketsSetSPMap[phiBins];
     for(unsigned int spacePointIndex=0; spacePointIndex < spacePoints.size(); spacePointIndex++){
-      auto spacePoint = spacePoints[spacePointIndex];
-      Scalar x = spacePoint->x() / UnitConstants::mm;
-      Scalar y = spacePoint->y() / UnitConstants::mm;
-      Scalar z = spacePoint->z() / UnitConstants::mm;
+      external_spacepoint_t spacePoint = spacePoints[spacePointIndex];
+      Scalar x = spacePoint->x() / Acts::UnitConstants::mm;
+      Scalar y = spacePoint->y() / Acts::UnitConstants::mm;
+      Scalar z = spacePoint->z() / Acts::UnitConstants::mm;
       //Scalar tt = hit.fourPosition().w() / Acts::UnitConstants::ns;
 
       // Helix transform

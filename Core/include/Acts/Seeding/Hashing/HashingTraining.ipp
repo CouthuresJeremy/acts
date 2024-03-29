@@ -69,7 +69,7 @@ AnnoyModel HashingTrainingAlgorithm<SpacePointContainer>::execute(
 
   AnnoyModel annoyModel = AnnoyModel(f);
   
-  using Scalar = ActsScalar;
+  using Scalar = Acts::ActsScalar;
 
   annoyModel.set_seed(AnnoySeed);
   // ACTS_DEBUG("f:" << f);

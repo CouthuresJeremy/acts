@@ -22,39 +22,6 @@
 #include <tuple>
 #include <vector>
 
-template <typename T>
-class ContainerPolicy {
- public:
-  virtual void policyInsert(T value) = 0;
-};
-
-template <typename T>
-class GenericBackInserter {
-  ContainerPolicy<T>& policy;
-
- public:
-  using value_type = T;
-  using iterator_category = std::output_iterator_tag;
-  GenericBackInserter(ContainerPolicy<T>& p) : policy(p) {}
-
-  GenericBackInserter& operator=(const T& value) {
-    policy.policyInsert(value);
-    return *this;
-  }
-
-  // Implement other necessary iterator interface methods...
-};
-
-template <typename T>
-class VectorPolicy : public ContainerPolicy<T> {
-  std::vector<T>& container;
-
- public:
-  VectorPolicy(std::vector<T>& vec) : container(vec) {}
-
-  void policyInsert(T value) override { container.push_back(value); }
-};
-
 namespace Acts {
 struct SeedFilterState {
   // longitudinal impact parameter as defined by bottom and middle space point

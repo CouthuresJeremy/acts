@@ -4,6 +4,7 @@
 // #include "ActsExamples/EventData/SimSpacePoint.hpp"
 // #include "Acts/Seeding/InternalSpacePoint.hpp"
 
+#include "Acts/Definitions/Units.hpp"
 #include "Acts/Seeding/Hashing/kissrandom.h"
 #include "Acts/Seeding/Hashing/annoylib_custom.h"
 
