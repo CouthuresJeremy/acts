@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#pragma once
 
 #ifndef ANNOY_ANNOYLIB_H
 #define ANNOY_ANNOYLIB_H

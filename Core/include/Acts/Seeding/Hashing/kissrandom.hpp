@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef ANNOY_KISSRANDOM_H
 #define ANNOY_KISSRANDOM_H
 
