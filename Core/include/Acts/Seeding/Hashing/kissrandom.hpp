@@ -56,7 +56,7 @@ struct Kiss32Random {
     // Draw random 0 or 1
     return kiss() & 1;
   }
-  inline size_t index(size_t n) {
+  inline std::size_t index(std::size_t n) {
     // Draw random integer between 0 and n-1 where n is at most the number of data points you have
     return kiss() % n;
   }
@@ -106,7 +106,7 @@ struct Kiss64Random {
     // Draw random 0 or 1
     return kiss() & 1;
   }
-  inline size_t index(size_t n) {
+  inline std::size_t index(std::size_t n) {
     // Draw random integer between 0 and n-1 where n is at most the number of data points you have
     return kiss() % n;
   }

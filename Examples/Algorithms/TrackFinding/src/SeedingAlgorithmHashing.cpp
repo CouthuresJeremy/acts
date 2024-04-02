@@ -263,7 +263,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
 
   // pre-compute the maximum size required so we only need to allocate once
   // doesn't combine the input containers of space point pointers
-  size_t maxNSpacePoints = 0, inSpacePoints = 0;
+  std::size_t maxNSpacePoints = 0, inSpacePoints = 0;
   for (const SpacePointPtrVector& bucket: bucketsPtrs){
     inSpacePoints = bucket.size();
     if (inSpacePoints > maxNSpacePoints){

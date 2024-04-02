@@ -147,7 +147,7 @@ using std::pair;
 using std::numeric_limits;
 using std::make_pair;
 
-inline bool remap_memory_and_truncate(void** _ptr, int _fd, size_t old_size, size_t new_size) {
+inline bool remap_memory_and_truncate(void** _ptr, int _fd, std::size_t old_size, std::size_t new_size) {
 #ifdef __linux__
     *_ptr = mremap(*_ptr, old_size, new_size, MREMAP_MAYMOVE);
     bool ok = ftruncate(_fd, new_size) != -1;
@@ -166,7 +166,7 @@ inline bool remap_memory_and_truncate(void** _ptr, int _fd, size_t old_size, siz
 namespace {
 
 template<typename S, typename Node>
-inline Node* get_node_ptr(const void* _nodes, const size_t _s, const S i) {
+inline Node* get_node_ptr(const void* _nodes, const std::size_t _s, const S i) {
   return (Node*)((uint8_t *)_nodes + (_s * i));
 }
 
@@ -403,10 +403,10 @@ inline void two_means(const vector<Node*>& nodes, int f, Random& random, bool co
     assigned to it, so to balance it. 
   */
   static int iteration_steps = 200;
-  size_t count = nodes.size();
+  std::size_t count = nodes.size();
 
-  size_t i = random.index(count);
-  size_t j = random.index(count-1);
+  std::size_t i = random.index(count);
+  std::size_t j = random.index(count-1);
   j += (j >= i); // ensure that i != j
 
   Distance::template copy_node<T, Node>(p, nodes[i], f);
@@ -418,7 +418,7 @@ inline void two_means(const vector<Node*>& nodes, int f, Random& random, bool co
 
   int ic = 1, jc = 1;
   for (int l = 0; l < iteration_steps; l++) {
-    size_t k = random.index(count);
+    std::size_t k = random.index(count);
     T di = ic * Distance::distance(p, nodes[k], f),
       dj = jc * Distance::distance(q, nodes[k], f);
     T norm = cosine ? get_norm(nodes[k]->v, f) : 1;
@@ -442,7 +442,7 @@ inline void two_means(const vector<Node*>& nodes, int f, Random& random, bool co
 
 struct Base {
   template<typename T, typename S, typename Node>
-  static inline void preprocess(void* /*nodes unused*/, size_t /*_s unused*/, const S /*node_count unused*/, const int /*f unused*/) {
+  static inline void preprocess(void* /*nodes unused*/, std::size_t /*_s unused*/, const S /*node_count unused*/, const int /*f unused*/) {
     // Override this in specific metric structs below if you need to do any pre-processing
     // on the entire set of nodes passed into this index.
   }
@@ -516,7 +516,7 @@ struct Angular : Base {
       return (bool)random.flip();
   }
   template<typename S, typename T, typename Random>
-  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, std::size_t s, Random& random, Node<S, T>* n) {
     Node<S, T>* p = (Node<S, T>*)alloca(s);
     Node<S, T>* q = (Node<S, T>*)alloca(s);
     two_means<T, Random, Angular, Node<S, T> >(nodes, f, random, true, p, q);
@@ -587,7 +587,7 @@ struct DotProduct : Angular {
   }
 
   template<typename S, typename T, typename Random>
-  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, std::size_t s, Random& random, Node<S, T>* n) {
     Node<S, T>* p = (Node<S, T>*)alloca(s);
     Node<S, T>* q = (Node<S, T>*)alloca(s);
     DotProduct::zero_value(p); 
@@ -629,7 +629,7 @@ struct DotProduct : Angular {
   }
 
   template<typename T, typename S, typename Node>
-  static inline void preprocess(void* nodes, size_t _s, const S node_count, const int f) {
+  static inline void preprocess(void* nodes, std::size_t _s, const S node_count, const int f) {
     // This uses a method from Microsoft Research for transforming inner product spaces to cosine/angular-compatible spaces.
     // (Bachrach et al., 2014, see https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/XboxInnerProduct.pdf)
 
@@ -670,7 +670,7 @@ struct Hamming : Base {
     T v[ANNOYLIB_V_ARRAY_SIZE];
   };
 
-  static const size_t max_iterations = 20;
+  static const std::size_t max_iterations = 20;
 
   template<typename T>
   static inline T pq_distance(T distance, T margin, int child_nr) {
@@ -694,7 +694,7 @@ struct Hamming : Base {
   }
   template<typename S, typename T>
   static inline T distance(const Node<S, T>* x, const Node<S, T>* y, int f) {
-    size_t dist = 0;
+    std::size_t dist = 0;
     for (int i = 0; i < f; i++) {
       dist += annoylib_popcount(x->v[i] ^ y->v[i]);
     }
@@ -702,7 +702,7 @@ struct Hamming : Base {
   }
   template<typename S, typename T>
   static inline bool margin(const Node<S, T>* n, const T* y, int f) {
-    static const size_t n_bits = sizeof(T) * 8;
+    static const std::size_t n_bits = sizeof(T) * 8;
     T chunk = n->v[0] / n_bits;
     return (y[chunk] & (static_cast<T>(1) << (n_bits - 1 - (n->v[0] % n_bits)))) != 0;
   }
@@ -711,9 +711,9 @@ struct Hamming : Base {
     return margin(n, y, f);
   }
   template<typename S, typename T, typename Random>
-  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
-    size_t cur_size = 0;
-    size_t i = 0;
+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, std::size_t s, Random& random, Node<S, T>* n) {
+    std::size_t cur_size = 0;
+    std::size_t i = 0;
     int dim = f * 8 * sizeof(T);
     for (; i < max_iterations; i++) {
       // choose random position to split at
@@ -797,7 +797,7 @@ struct Euclidean : Minkowski {
     return euclidean_distance(x->v, y->v, f);    
   }
   template<typename S, typename T, typename Random>
-  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, std::size_t s, Random& random, Node<S, T>* n) {
     Node<S, T>* p = (Node<S, T>*)alloca(s);
     Node<S, T>* q = (Node<S, T>*)alloca(s);
     two_means<T, Random, Euclidean, Node<S, T> >(nodes, f, random, false, p, q);
@@ -828,7 +828,7 @@ struct AngularEuclidean : Minkowski {
     return angular_euclidean_distance(x->v, y->v, f);    
   }
   template<typename S, typename T, typename Random>
-  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, std::size_t s, Random& random, Node<S, T>* n) {
     Node<S, T>* p = (Node<S, T>*)alloca(s);
     Node<S, T>* q = (Node<S, T>*)alloca(s);
     two_means<T, Random, AngularEuclidean, Node<S, T> >(nodes, f, random, false, p, q);
@@ -859,7 +859,7 @@ struct Manhattan : Minkowski {
     return manhattan_distance(x->v, y->v, f);
   }
   template<typename S, typename T, typename Random>
-  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, std::size_t s, Random& random, Node<S, T>* n) {
     Node<S, T>* p = (Node<S, T>*)alloca(s);
     Node<S, T>* q = (Node<S, T>*)alloca(s);
     two_means<T, Random, Manhattan, Node<S, T> >(nodes, f, random, false, p, q);
@@ -895,8 +895,8 @@ class AnnoyIndexInterface {
   virtual void unload() = 0;
   virtual bool load(const char* filename, bool prefault=false, char** error=NULL) = 0;
   virtual T get_distance(S i, S j) const = 0;
-  virtual void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances) const = 0;
-  virtual void get_nns_by_vector(const T* w, size_t n, int search_k, vector<S>* result, vector<T>* distances) const = 0;
+  virtual void get_nns_by_item(S item, std::size_t n, int search_k, vector<S>* result, vector<T>* distances) const = 0;
+  virtual void get_nns_by_vector(const T* w, std::size_t n, int search_k, vector<S>* result, vector<T>* distances) const = 0;
   virtual S get_n_items() const = 0;
   virtual S get_n_trees() const = 0;
   virtual void verbose(bool v) = 0;
@@ -932,7 +932,7 @@ public:
 
 protected:
   const unsigned int _f;
-  size_t _s; // Size of each node
+  std::size_t _s; // Size of each node
   S _n_items;
   void* _nodes; // Could either be mmapped, or point to a memory buffer that we reallocate
   S _n_nodes;
@@ -951,7 +951,7 @@ public:
     _s = offsetof(Node, v) + _f * sizeof(T); // Size of each node
     _verbose = false;
     _built = false;
-    _K = (S) (((size_t) (_s - offsetof(Node, children))) / sizeof(S)); // Max number of descendants to fit into node
+    _K = (S) (((std::size_t) (_s - offsetof(Node, children))) / sizeof(S)); // Max number of descendants to fit into node
     reinitialize(); // Reset everything
   }
   ~AnnoyIndex() {
@@ -1072,15 +1072,15 @@ public:
     // Also, copy the roots into the last segment of the array
     // This way we can load them faster without reading the whole file
     _allocate_size(_n_nodes + (S)_roots.size());
-    for (size_t i = 0; i < _roots.size(); i++)
+    for (std::size_t i = 0; i < _roots.size(); i++)
       memcpy(_get(_n_nodes++), _get(_roots[i]), _s);
 
     if (_verbose) annoylib_showUpdate("has %d nodes\n", _n_nodes);
     
     if (_on_disk) {
       if (!remap_memory_and_truncate(&_nodes, _fd,
-          static_cast<size_t>(_s) * static_cast<size_t>(_nodes_size),
-          static_cast<size_t>(_s) * static_cast<size_t>(_n_nodes))) {
+          static_cast<std::size_t>(_s) * static_cast<std::size_t>(_nodes_size),
+          static_cast<std::size_t>(_s) * static_cast<std::size_t>(_n_nodes))) {
         // TODO: this probably creates an index in a corrupt state... not sure what to do
         set_error_from_errno(error, "Unable to truncate");
         return false;
@@ -1121,7 +1121,7 @@ public:
         return false;
       }
 
-      if (fwrite(_nodes, _s, _n_nodes, f) != (size_t) _n_nodes) {
+      if (fwrite(_nodes, _s, _n_nodes, f) != (std::size_t) _n_nodes) {
         set_error_from_errno(error, "Unable to write");
         return false;
       }
@@ -1223,7 +1223,7 @@ public:
     return D::normalized_distance(D::distance(_get(i), _get(j), _f));
   }
 
-  void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
+  void get_nns_by_item(S item, std::size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
     if (item < 0 || item >= _n_items) {
         // handle OOB case
         std::cerr << "Error: item index out of bounds\n";
@@ -1232,7 +1232,7 @@ public:
     _get_all_nns(m->v, n, search_k, result, distances);
   }
 
-  void get_nns_by_vector(const T* w, size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
+  void get_nns_by_vector(const T* w, std::size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
     _get_all_nns(w, n, search_k, result, distances);
   }
 
@@ -1279,7 +1279,7 @@ public:
         }
         threaded_build_policy.unlock_n_nodes();
       } else {
-        if (thread_roots.size() >= (size_t)q) {
+        if (thread_roots.size() >= (std::size_t)q) {
           break;
         }
       }
@@ -1311,8 +1311,8 @@ protected:
     
     if (_on_disk) {
       if (!remap_memory_and_truncate(&_nodes, _fd, 
-          static_cast<size_t>(_s) * static_cast<size_t>(_nodes_size), 
-          static_cast<size_t>(_s) * static_cast<size_t>(new_nodes_size)) && 
+          static_cast<std::size_t>(_s) * static_cast<std::size_t>(_nodes_size), 
+          static_cast<std::size_t>(_s) * static_cast<std::size_t>(new_nodes_size)) && 
           _verbose)
           annoylib_showUpdate("File truncation error\n");
     } else {
@@ -1364,7 +1364,7 @@ protected:
     if (indices.size() == 1 && !is_root)
       return indices[0];
 
-    if (indices.size() <= (size_t)_K && (!is_root || (size_t)_n_items <= (size_t)_K || indices.size() == 1)) {
+    if (indices.size() <= (std::size_t)_K && (!is_root || (std::size_t)_n_items <= (std::size_t)_K || indices.size() == 1)) {
       threaded_build_policy.lock_n_nodes();
       _allocate_size(_n_nodes + 1, threaded_build_policy);
       S item = _n_nodes++;
@@ -1387,7 +1387,7 @@ protected:
 
     threaded_build_policy.lock_shared_nodes();
     vector<Node*> children;
-    for (size_t i = 0; i < indices.size(); i++) {
+    for (std::size_t i = 0; i < indices.size(); i++) {
       S j = indices[i];
       Node* n = _get(j);
       if (n)
@@ -1402,7 +1402,7 @@ protected:
       children_indices[1].clear();
       D::create_split(children, _f, _s, _random, m);
 
-      for (size_t i = 0; i < indices.size(); i++) {
+      for (std::size_t i = 0; i < indices.size(); i++) {
         S j = indices[i];
         Node* n = _get(j);
         if (n) {
@@ -1431,7 +1431,7 @@ protected:
       for (unsigned int z = 0; z < _f; z++)
         m->v[z] = 0;
 
-      for (size_t i = 0; i < indices.size(); i++) {
+      for (std::size_t i = 0; i < indices.size(); i++) {
         S j = indices[i];
         // Just randomize...
         children_indices[_random.flip()].push_back(j);
@@ -1458,7 +1458,7 @@ protected:
     return item;
   }
 
-  void _get_all_nns(const T* v, size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
+  void _get_all_nns(const T* v, std::size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
     Node* v_node = (Node *)alloca(_s);
     D::template zero_value<Node>(v_node);
     memcpy(v_node->v, v, sizeof(T) * _f);
@@ -1470,7 +1470,7 @@ protected:
       search_k = n * _roots.size();
     }
 
-    for (size_t i = 0; i < _roots.size(); i++) {
+    for (std::size_t i = 0; i < _roots.size(); i++) {
       if (_roots[i]  >= _n_nodes){
         std::cerr << "_roots[i]  >= _n_nodes\n";
       }
@@ -1478,7 +1478,7 @@ protected:
     }
 
     std::vector<S> nns;
-    while (nns.size() < (size_t)search_k && !q.empty()) {
+    while (nns.size() < (std::size_t)search_k && !q.empty()) {
       const pair<T, S>& top = q.top();
       T d = top.first;
       S i = top.second;
@@ -1515,7 +1515,7 @@ protected:
     std::sort(nns.begin(), nns.end());
     vector<pair<T, S> > nns_dist;
     S last = -1;
-    for (size_t i = 0; i < nns.size(); i++) {
+    for (std::size_t i = 0; i < nns.size(); i++) {
       S j = nns[i]; 
       if (j == last)
         continue;
@@ -1526,13 +1526,13 @@ protected:
       // std::cout << "distances: after _get\n";
     }
 
-    size_t m = nns_dist.size();
+    std::size_t m = nns_dist.size();
     if (m < n){
       std::cerr << "Returned less than " << n << " nodes" << "\n";
     }
-    size_t p = n < m ? n : m; // Return this many items
+    std::size_t p = n < m ? n : m; // Return this many items
     std::partial_sort(nns_dist.begin(), nns_dist.begin() + p, nns_dist.end());
-    for (size_t i = 0; i < p; i++) {
+    for (std::size_t i = 0; i < p; i++) {
       if (distances)
         distances->push_back(D::normalized_distance(nns_dist[i].first));
       result->push_back(nns_dist[i].second);

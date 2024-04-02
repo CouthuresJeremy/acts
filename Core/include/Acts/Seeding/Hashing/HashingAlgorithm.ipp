@@ -32,7 +32,7 @@ void HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
 
   // ACTS_DEBUG("Start of HashingAlgorithm execute");
 
-  const size_t nSpacePoints = spacePoints.size();
+  const std::size_t nSpacePoints = spacePoints.size();
 
   const unsigned int bucketSize = m_cfg.bucketSize;
   const unsigned int zBins = m_cfg.zBins;

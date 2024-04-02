@@ -10,6 +10,7 @@
 #define _WIN32_WINNT 0x0501	// Change this to the appropriate value to target other versions of Windows.
 #endif						
 
+#include <stdlib.h>
 #include <sys/types.h>
 #include <windows.h>
 #include <errno.h>
@@ -85,7 +86,7 @@ static DWORD __map_mmap_prot_file(const int prot)
     return desiredAccess;
 }
 
-inline void* mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off)
+inline void* mmap(void *addr, std::size_t len, int prot, int flags, int fildes, off_t off)
 {
     HANDLE fm, h;
     
@@ -156,7 +157,7 @@ inline void* mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t
     return map;
 }
 
-inline int munmap(void *addr, size_t len)
+inline int munmap(void *addr, std::size_t len)
 {
     if (UnmapViewOfFile(addr))
         return 0;
@@ -166,7 +167,7 @@ inline int munmap(void *addr, size_t len)
     return -1;
 }
 
-inline int mprotect(void *addr, size_t len, int prot)
+inline int mprotect(void *addr, std::size_t len, int prot)
 {
     DWORD newProtect = __map_mmap_prot_page(prot);
     DWORD oldProtect = 0;
@@ -179,7 +180,7 @@ inline int mprotect(void *addr, size_t len, int prot)
     return -1;
 }
 
-inline int msync(void *addr, size_t len, int flags)
+inline int msync(void *addr, std::size_t len, int flags)
 {
     if (FlushViewOfFile(addr, len))
         return 0;
@@ -189,7 +190,7 @@ inline int msync(void *addr, size_t len, int flags)
     return -1;
 }
 
-inline int mlock(const void *addr, size_t len)
+inline int mlock(const void *addr, std::size_t len)
 {
     if (VirtualLock((LPVOID)addr, len))
         return 0;
@@ -199,7 +200,7 @@ inline int mlock(const void *addr, size_t len)
     return -1;
 }
 
-inline int munlock(const void *addr, size_t len)
+inline int munlock(const void *addr, std::size_t len)
 {
     if (VirtualUnlock((LPVOID)addr, len))
         return 0;
