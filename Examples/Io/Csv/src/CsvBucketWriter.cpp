@@ -98,27 +98,22 @@ ActsExamples::ProcessCode ActsExamples::CsvBucketWriter::writeT(
     if (bucket.empty()) {
       continue;
     }
-    // for (int SPIdx = 0; SPIdx < bucket.size(); SPIdx++){
+    // Split the bucket into lines of 20 space points to manage variable sizes
     for (int nLines = 0;
-         nLines < bucket.size() / 20 + (int)(bucket.size() % 20 != 0);
+         nLines < (int)(bucket.size() / 20) + (int)(bucket.size() % 20 != 0);
          nLines++) {
       bucketData.bucketIdx = bucketIdx;
       bucketData.bucketSize = bucket.size();
       for (int SPIdx = 0; SPIdx < 20; SPIdx++) {
-        if (nLines * 20 + SPIdx >= bucket.size()) {
+        if (nLines * 20 + SPIdx >= (int)bucket.size()) {
           break;
         }
-        // bucketData.measurement_id[SPIdx] =
-        //     (static_cast<const IndexSourceLink&>(
-        //          *(bucket[nLines * 20 + SPIdx]).sourceLinks()[0]))
-        //         .index();
         bucketData.measurement_id[SPIdx] =
                  (bucket[nLines * 20 + SPIdx]).sourceLinks()[0].get<IndexSourceLink>()
                 .index();
       }
       writerBucket.append(bucketData);
     }
-    // break;
     bucketIdx++;
   }
 
