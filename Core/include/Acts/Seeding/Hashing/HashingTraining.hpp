@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Acts/Seeding/Hashing/kissrandom.h"
-#include "Acts/Seeding/Hashing/annoylib_custom.h"
+#include "Acts/Seeding/Hashing/kissrandom.hpp"
+#include "Acts/Seeding/Hashing/annoylib.hpp"
 #include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
 
 #include <cstddef>

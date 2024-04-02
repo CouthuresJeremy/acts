@@ -43,7 +43,7 @@ typedef signed __int64    int64_t;
  #ifndef NOMINMAX
   #define NOMINMAX
  #endif
- #include "mman.h"
+ #include "mman.hpp"
  #include <windows.h>
 #else
  #include <sys/mman.h>

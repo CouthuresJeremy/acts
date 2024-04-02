@@ -8,9 +8,8 @@
 
 #pragma once
 
-#include "Acts/Definitions/Units.hpp"
-#include "Acts/Seeding/Hashing/kissrandom.h"
-#include "Acts/Seeding/Hashing/annoylib_custom.h"
+#include "Acts/Seeding/Hashing/kissrandom.hpp"
+#include "Acts/Seeding/Hashing/annoylib.hpp"
 
 #include <map>
 #include <set>
