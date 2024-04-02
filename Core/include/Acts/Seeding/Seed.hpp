@@ -27,7 +27,7 @@ class Seed {
   Seed(const Seed&) = default;
   Seed& operator=(const Seed&) = default;
   inline bool operator< (const Seed& rhs) const { 
-    // not relevent ordering
+    // not relevant ordering
     if (this->sp()[0]->z() != rhs.sp()[0]->z()){
       return this->sp()[0]->z() < rhs.sp()[0]->z();
     } else if (this->sp()[1]->z() != rhs.sp()[1]->z()){

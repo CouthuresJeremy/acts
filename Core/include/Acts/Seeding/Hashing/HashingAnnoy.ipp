@@ -95,7 +95,7 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
       static thread_local std::vector<unsigned int> bucket_ids;
       bucket_ids.clear();
 
-      /// Get the bucketSize closests spacePoints
+      /// Get the bucketSize closest spacePoints
       annoyModel->get_nns_by_item(spacePointIndex, bucketSize, -1, &bucket_ids, nullptr);
 
       // Scalar phi = atan2(y, x);
@@ -138,7 +138,7 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::ComputeSpacePoint
 
       std::vector<unsigned int> bucket_ids;
 
-      /// Get the bucketSize closests spacePoints
+      /// Get the bucketSize closest spacePoints
       annoyModel->get_nns_by_item(spacePointIndex, bucketSize, -1, &bucket_ids, nullptr);
 
       // Scalar phi = atan2(y, x);

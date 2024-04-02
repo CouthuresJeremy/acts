@@ -1487,25 +1487,25 @@ protected:
       }
       // assert((i < _n_nodes));
       // std::cout << "_get_all_nns while: before _get\n";
-      Node* nd = _get(i);
+      Node* node = _get(i);
       // std::cout << "_get_all_nns while: after _get\n";
       q.pop();
-      if (nd->n_descendants == 1 && i < _n_items) {
+      if (node->n_descendants == 1 && i < _n_items) {
         nns.push_back(i);
-      } else if (nd->n_descendants <= _K) {
-        const S* dst = nd->children;
-        nns.insert(nns.end(), dst, &dst[nd->n_descendants]);
+      } else if (node->n_descendants <= _K) {
+        const S* dst = node->children;
+        nns.insert(nns.end(), dst, &dst[node->n_descendants]);
       } else {
-        T margin = D::margin(nd, v, _f);
-        if (static_cast<S>(nd->children[1])  >= _n_nodes){
-          std::cerr << "static_cast<S>(nd->children[1])  >= _n_nodes\n";
+        T margin = D::margin(node, v, _f);
+        if (static_cast<S>(node->children[1])  >= _n_nodes){
+          std::cerr << "static_cast<S>(node->children[1])  >= _n_nodes\n";
         } else {
-          q.push(make_pair(D::pq_distance(d, margin, 1), static_cast<S>(nd->children[1])));
+          q.push(make_pair(D::pq_distance(d, margin, 1), static_cast<S>(node->children[1])));
         }
-        if (static_cast<S>(nd->children[0])  >= _n_nodes){
-          std::cerr << "static_cast<S>(nd->children[0])  >= _n_nodes\n";
+        if (static_cast<S>(node->children[0])  >= _n_nodes){
+          std::cerr << "static_cast<S>(node->children[0])  >= _n_nodes\n";
         } else {
-          q.push(make_pair(D::pq_distance(d, margin, 0), static_cast<S>(nd->children[0])));
+          q.push(make_pair(D::pq_distance(d, margin, 0), static_cast<S>(node->children[0])));
         }
       }
     }
