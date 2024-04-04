@@ -4,17 +4,19 @@
 #define ANNOY_KISSRANDOM_H
 
 #if defined(_MSC_VER) && _MSC_VER == 1500
-typedef unsigned __int32    uint32_t;
-typedef unsigned __int64    uint64_t;
+typedef unsigned __int32 uint32_t;
+typedef unsigned __int64 uint64_t;
 #else
-#include <stdint.h>
 #include <cstddef>
+
+#include <stdint.h>
 #endif
 
 namespace Annoy {
 
 // KISS = "keep it simple, stupid", but high quality random number generator
-// http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf -> "Use a good RNG and build it into your code"
+// http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf -> "Use a good RNG
+// and build it into your code"
 // http://mathforum.org/kb/message.jspa?messageID=6627731
 // https://de.wikipedia.org/wiki/KISS_(Zufallszahlengenerator)
 
@@ -50,7 +52,7 @@ struct Kiss32Random {
     // Multiply-with-carry
     uint64_t t = 698769069ULL * z + c;
     c = t >> 32;
-    z = (uint32_t) t;
+    z = (uint32_t)t;
 
     return x + y + z;
   }
@@ -59,7 +61,8 @@ struct Kiss32Random {
     return kiss() & 1;
   }
   inline std::size_t index(std::size_t n) {
-    // Draw random integer between 0 and n-1 where n is at most the number of data points you have
+    // Draw random integer between 0 and n-1 where n is at most the number of
+    // data points you have
     return kiss() % n;
   }
   inline void set_seed(uint32_t seed) {
@@ -67,7 +70,8 @@ struct Kiss32Random {
   }
 };
 
-// 64 bit KISS. Use this if you have more than about 2^24 data points ("big data" ;) )
+// 64 bit KISS. Use this if you have more than about 2^24 data points ("big
+// data" ;) )
 struct Kiss64Random {
   uint64_t x;
   uint64_t y;
@@ -89,18 +93,19 @@ struct Kiss64Random {
 
   uint64_t kiss() {
     // Linear congruence generator
-    z = 6906969069LL*z+1234567;
+    z = 6906969069LL * z + 1234567;
 
     // Xor shift
-    y ^= (y<<13);
-    y ^= (y>>17);
-    y ^= (y<<43);
+    y ^= (y << 13);
+    y ^= (y >> 17);
+    y ^= (y << 43);
 
-    // Multiply-with-carry (uint128_t t = (2^58 + 1) * x + c; c = t >> 64; x = (uint64_t) t)
-    uint64_t t = (x<<58)+c;
-    c = (x>>6);
+    // Multiply-with-carry (uint128_t t = (2^58 + 1) * x + c; c = t >> 64; x =
+    // (uint64_t) t)
+    uint64_t t = (x << 58) + c;
+    c = (x >> 6);
     x += t;
-    c += (x<t);
+    c += (x < t);
 
     return x + y + z;
   }
@@ -109,7 +114,8 @@ struct Kiss64Random {
     return kiss() & 1;
   }
   inline std::size_t index(std::size_t n) {
-    // Draw random integer between 0 and n-1 where n is at most the number of data points you have
+    // Draw random integer between 0 and n-1 where n is at most the number of
+    // data points you have
     return kiss() % n;
   }
   inline void set_seed(uint64_t seed) {
@@ -117,7 +123,7 @@ struct Kiss64Random {
   }
 };
 
-}
+}  // namespace Annoy
 
 #endif
 // vim: tabstop=2 shiftwidth=2

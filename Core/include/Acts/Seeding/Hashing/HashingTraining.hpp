@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "Acts/Seeding/Hashing/kissrandom.hpp"
-#include "Acts/Seeding/Hashing/annoylib.hpp"
 #include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
+#include "Acts/Seeding/Hashing/annoylib.hpp"
+#include "Acts/Seeding/Hashing/kissrandom.hpp"
 
 #include <cstddef>
 #include <string>
@@ -18,12 +18,13 @@
 namespace Acts {
 
 using AnnoyMetric = Annoy::AngularEuclidean;
-using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
-                  Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
+using AnnoyModel =
+    Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random,
+                      Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
 template <typename SpacePointContainer>
 class HashingTrainingAlgorithm {
  public:
-  HashingTrainingAlgorithm(const HashingTrainingConfig& cfg);
+  HashingTrainingAlgorithm(const HashingTrainingConfig &cfg);
 
   /**
    * @brief Destroy the object.
@@ -31,15 +32,15 @@ class HashingTrainingAlgorithm {
   ~HashingTrainingAlgorithm() = default;
 
   HashingTrainingAlgorithm() = default;
-  HashingTrainingAlgorithm(const HashingTrainingAlgorithm<SpacePointContainer> &) =
-      delete;
+  HashingTrainingAlgorithm(
+      const HashingTrainingAlgorithm<SpacePointContainer> &) = delete;
   HashingTrainingAlgorithm<SpacePointContainer> &operator=(
       const HashingTrainingAlgorithm<SpacePointContainer> &) = default;
 
   AnnoyModel execute(SpacePointContainer spacePoints) const;
 
   // / Get readonly access to the config parameters
-  const Acts::HashingTrainingConfig& config() const { return m_cfg; }
+  const Acts::HashingTrainingConfig &config() const { return m_cfg; }
 
  private:
   HashingTrainingConfig m_cfg;

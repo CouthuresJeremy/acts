@@ -14,6 +14,7 @@
 #include "ActsExamples/Digitization/DigitizationConfig.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
 #include "ActsExamples/Io/Csv/CsvBFieldWriter.hpp"
+#include "ActsExamples/Io/Csv/CsvBucketWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvExaTrkXGraphWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvMeasurementWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvParticleWriter.hpp"
@@ -24,7 +25,6 @@
 #include "ActsExamples/Io/Csv/CsvSpacepointWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvTrackParameterWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvTrackWriter.hpp"
-#include "ActsExamples/Io/Csv/CsvBucketWriter.hpp"
 #include "ActsExamples/Io/Csv/CsvTrackingGeometryWriter.hpp"
 #include "ActsExamples/Io/NuclearInteractions/RootNuclearInteractionParametersWriter.hpp"
 #include "ActsExamples/Io/Performance/CKFPerformanceWriter.hpp"
@@ -370,10 +370,10 @@ void addOutput(Context& ctx) {
   ACTS_PYTHON_DECLARE_WRITER(ActsExamples::CsvSpacepointWriter, mex,
                              "CsvSpacepointWriter", inputSpacepoints, outputDir,
                              outputPrecision);
-                              
+
   ACTS_PYTHON_DECLARE_WRITER(ActsExamples::CsvBucketWriter, mex,
-                              "CsvBucketWriter", inputBuckets, outputDir,
-                              outputPrecision);
+                             "CsvBucketWriter", inputBuckets, outputDir,
+                             outputPrecision);
 
   ACTS_PYTHON_DECLARE_WRITER(ActsExamples::CsvTrackWriter, mex,
                              "CsvTrackWriter", inputTracks, outputDir, fileName,

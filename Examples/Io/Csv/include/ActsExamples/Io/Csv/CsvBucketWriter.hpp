@@ -19,8 +19,8 @@
 #include "ActsExamples/EventData/Index.hpp"
 #include "ActsExamples/EventData/Measurement.hpp"
 #include "ActsExamples/EventData/SimHit.hpp"
-#include "ActsExamples/EventData/SimSpacePoint.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
+#include "ActsExamples/EventData/SimSpacePoint.hpp"
 #include "ActsExamples/Framework/WriterT.hpp"
 
 #include <string>
@@ -37,7 +37,8 @@ namespace ActsExamples {
 ///     ...
 ///
 /// Intrinsically thread-safe as one file per event.
-class CsvBucketWriter final : public WriterT<std::vector<SimSpacePointContainer>> {
+class CsvBucketWriter final
+    : public WriterT<std::vector<SimSpacePointContainer>> {
  public:
   struct Config {
     /// Which measurement collection to write.
@@ -58,7 +59,7 @@ class CsvBucketWriter final : public WriterT<std::vector<SimSpacePointContainer>
 
   /// End-of-run hook
   ProcessCode finalize() override;
-  
+
   /// Get readonly access to the config parameters
   const Config& config() const { return m_cfg; }
 
@@ -68,8 +69,9 @@ class CsvBucketWriter final : public WriterT<std::vector<SimSpacePointContainer>
   ///
   /// @param ctx The Algorithm context with per event information
   /// @param buckets is the data to be written out
-  ProcessCode writeT(const AlgorithmContext& ctx,
-                     const std::vector<SimSpacePointContainer>& buckets) override;
+  ProcessCode writeT(
+      const AlgorithmContext& ctx,
+      const std::vector<SimSpacePointContainer>& buckets) override;
 
  private:
   Config m_cfg;

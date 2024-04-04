@@ -24,10 +24,8 @@ HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::HashingAlgorithm(
 // function to create the buckets of spacepoints.
 template <typename external_spacepoint_t, typename SpacePointContainer>
 void HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
-    SpacePointContainer& spacePoints,
-    AnnoyModel* annoyModel,
+    SpacePointContainer& spacePoints, AnnoyModel* annoyModel,
     GenericBackInserter<SpacePointContainer> outIt) const {
-
   using map_t = std::map<unsigned int, std::set<external_spacepoint_t>>;
 
   // ACTS_DEBUG("Start of HashingAlgorithm execute");
@@ -43,20 +41,23 @@ void HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
   // ACTS_DEBUG("zBins:" << zBins);
   // ACTS_DEBUG("phiBins:" << phiBins);
 
-  HashingAnnoy<external_spacepoint_t, SpacePointContainer>* AnnoyHashingInstance = new HashingAnnoy<external_spacepoint_t, SpacePointContainer>();
-  AnnoyHashingInstance->ComputeSpacePointsBuckets(annoyModel, spacePoints, bucketSize, zBins, phiBins);
+  HashingAnnoy<external_spacepoint_t, SpacePointContainer>*
+      AnnoyHashingInstance =
+          new HashingAnnoy<external_spacepoint_t, SpacePointContainer>();
+  AnnoyHashingInstance->ComputeSpacePointsBuckets(annoyModel, spacePoints,
+                                                  bucketSize, zBins, phiBins);
 
   // ACTS_DEBUG("Loaded " << nSpacePoints << " Space Points");
 
   map_t bucketsSPMap = AnnoyHashingInstance->m_bucketsSPMap;
   unsigned int nBuckets = (unsigned int)bucketsSPMap.size();
   // ACTS_DEBUG("n_buckets:" << nBuckets);
-  if (nBuckets > nSpacePoints){
+  if (nBuckets > nSpacePoints) {
     throw std::runtime_error("More buckets than the number of Space Points");
   }
-  for (unsigned int bucketIdx = 0; bucketIdx < nBuckets; bucketIdx++){
-    typename map_t::iterator iterator=bucketsSPMap.find(bucketIdx);
-    if (iterator == bucketsSPMap.end()){
+  for (unsigned int bucketIdx = 0; bucketIdx < nBuckets; bucketIdx++) {
+    typename map_t::iterator iterator = bucketsSPMap.find(bucketIdx);
+    if (iterator == bucketsSPMap.end()) {
       throw std::runtime_error("Not every bucket have been found");
     }
     std::set<external_spacepoint_t> bucketSet = iterator->second;

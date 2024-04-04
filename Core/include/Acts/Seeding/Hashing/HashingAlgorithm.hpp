@@ -8,10 +8,10 @@
 
 #pragma once
 
-#include "Acts/Seeding/Hashing/kissrandom.hpp"
-#include "Acts/Seeding/Hashing/annoylib.hpp"
-#include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
 #include "Acts/Seeding/ContainerPolicy.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
+#include "Acts/Seeding/Hashing/annoylib.hpp"
+#include "Acts/Seeding/Hashing/kissrandom.hpp"
 
 #include <cstddef>
 #include <string>
@@ -19,8 +19,9 @@
 namespace Acts {
 
 using AnnoyMetric = Annoy::AngularEuclidean;
-using AnnoyModel = Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random, 
-                  Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
+using AnnoyModel =
+    Annoy::AnnoyIndex<unsigned int, double, AnnoyMetric, Annoy::Kiss32Random,
+                      Annoy::AnnoyIndexSingleThreadedBuildPolicy>;
 
 template <typename external_spacepoint_t, typename SpacePointContainer>
 class HashingAlgorithm {
@@ -33,14 +34,14 @@ class HashingAlgorithm {
   ~HashingAlgorithm() = default;
 
   HashingAlgorithm() = default;
-  HashingAlgorithm(const HashingAlgorithm<external_spacepoint_t, SpacePointContainer> &) =
-      delete;
-  HashingAlgorithm<external_spacepoint_t, SpacePointContainer> &operator=(
-      const HashingAlgorithm<external_spacepoint_t, SpacePointContainer> &) = default;
+  HashingAlgorithm(const HashingAlgorithm<external_spacepoint_t,
+                                          SpacePointContainer>&) = delete;
+  HashingAlgorithm<external_spacepoint_t, SpacePointContainer>& operator=(
+      const HashingAlgorithm<external_spacepoint_t, SpacePointContainer>&) =
+      default;
 
-  void execute(SpacePointContainer& spacePoints, 
-              AnnoyModel* annoyModel, 
-              GenericBackInserter<SpacePointContainer> outIt) const;
+  void execute(SpacePointContainer& spacePoints, AnnoyModel* annoyModel,
+               GenericBackInserter<SpacePointContainer> outIt) const;
 
   /// Get readonly access to the config parameters
   const Acts::HashingAlgorithmConfig& config() const { return m_cfg; }

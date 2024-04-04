@@ -86,19 +86,18 @@ inline bool operator<(const SpacePoint& lhs, const SpacePoint& rhs) {
   //   that the same measurement index always produces the same space point?
   // no need to check r since it is fully defined by x/y
   // Can be used for sorting the space points
-  if ((lhs.x() == rhs.x()) and
-          (lhs.y() == rhs.y()) and (lhs.z() == rhs.z()) and
-          (lhs.varianceR() == rhs.varianceR()) and
-          (lhs.varianceZ() == rhs.varianceZ())){
-            return false;
-          }
-  if (lhs.x() != rhs.x()){
+  if ((lhs.x() == rhs.x()) and (lhs.y() == rhs.y()) and (lhs.z() == rhs.z()) and
+      (lhs.varianceR() == rhs.varianceR()) and
+      (lhs.varianceZ() == rhs.varianceZ())) {
+    return false;
+  }
+  if (lhs.x() != rhs.x()) {
     return (lhs.x() < rhs.x());
   }
-  if (lhs.y() != rhs.y()){
+  if (lhs.y() != rhs.y()) {
     return (lhs.y() < rhs.y());
   }
-  if (lhs.z() != rhs.z()){
+  if (lhs.z() != rhs.z()) {
     return (lhs.z() < rhs.z());
   }
   return false;

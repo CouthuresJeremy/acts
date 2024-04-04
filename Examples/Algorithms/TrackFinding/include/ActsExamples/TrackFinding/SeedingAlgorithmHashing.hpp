@@ -9,14 +9,14 @@
 #pragma once
 
 #include "Acts/Seeding/BinFinder.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
+#include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
+#include "Acts/Seeding/Hashing/HashingTraining.hpp"
+#include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
+#include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFilterConfig.hpp"
 #include "Acts/Seeding/SeedFinder.hpp"
-#include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
-#include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
-#include "Acts/Seeding/Hashing/HashingTraining.hpp"
-#include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
-#include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Logger.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
@@ -27,24 +27,21 @@
 #include "ActsExamples/Framework/ProcessCode.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <iterator>
-#include <vector>
-#include <set>
 
 template <typename T>
 class SetPolicy : public ContainerPolicy<T> {
-    std::set<T>& container;
+  std::set<T>& container;
 
-public:
-    SetPolicy(std::set<T>& s) : container(s) {}
+ public:
+  SetPolicy(std::set<T>& s) : container(s) {}
 
-    void policyInsert(T value) override {
-        container.insert(value);
-    }
+  void policyInsert(T value) override { container.insert(value); }
 };
 
 namespace ActsExamples {
@@ -110,9 +107,13 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
       m_inputSpacePoints{};
 
   WriteDataHandle<SimSeedContainer> m_outputSeeds{this, "OutputSeeds"};
-  WriteDataHandle<std::vector<SimSpacePointContainer>> m_outputBuckets{this, "OutputBuckets"};
-  Acts::HashingAlgorithm<const SimSpacePoint*, std::vector<const SimSpacePoint*>> m_Hashing;
-  Acts::HashingTrainingAlgorithm<std::vector<const SimSpacePoint*>> m_HashingTraining;
+  WriteDataHandle<std::vector<SimSpacePointContainer>> m_outputBuckets{
+      this, "OutputBuckets"};
+  Acts::HashingAlgorithm<const SimSpacePoint*,
+                         std::vector<const SimSpacePoint*>>
+      m_Hashing;
+  Acts::HashingTrainingAlgorithm<std::vector<const SimSpacePoint*>>
+      m_HashingTraining;
 };
 
 }  // namespace ActsExamples
