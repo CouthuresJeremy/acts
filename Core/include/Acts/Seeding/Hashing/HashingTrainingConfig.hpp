@@ -7,6 +7,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
+
+#include <cstdint>
+
 namespace Acts {
 
 struct HashingTrainingConfig {
@@ -14,7 +17,7 @@ struct HashingTrainingConfig {
   unsigned int AnnoySeed = 123456789;
 
   /// Number of features to use
-  int32_t f = 1;
+  std::int32_t f = 1;
 };
 
 }  // namespace Acts

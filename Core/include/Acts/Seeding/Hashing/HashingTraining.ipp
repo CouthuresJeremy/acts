@@ -9,6 +9,8 @@
 #include "Acts/Definitions/Algebra.hpp"
 #include "Acts/Definitions/Units.hpp"
 
+#include <cstdint>
+
 namespace Acts {
 // constructor
 template <typename SpacePointContainer>
@@ -43,7 +45,7 @@ AnnoyModel HashingTrainingAlgorithm<SpacePointContainer>::execute(
   // ACTS_DEBUG("event " << ctx.eventNumber);
 
   const unsigned int AnnoySeed = m_cfg.AnnoySeed;
-  const int32_t f = m_cfg.f;
+  const std::int32_t f = m_cfg.f;
 
   AnnoyModel annoyModel = AnnoyModel(f);
 
