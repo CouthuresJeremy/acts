@@ -5,6 +5,7 @@
 
 #pragma once
 
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #ifndef _MMAN_WIN32_H
 #define _MMAN_WIN32_H
 
@@ -233,4 +234,5 @@ inline int ftruncate(const int fd, const int64_t size) {
 }
 #endif
 
+#endif
 #endif
