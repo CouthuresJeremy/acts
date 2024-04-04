@@ -76,7 +76,6 @@ detector, trackingGeometry, decorators = getOpenDataDetector(
 geoSelectionConfigFile = oddSeedingSel
 
 
-
 field = acts.ConstantBField(acts.Vector3(0.0, 0.0, 2.0 * u.T))
 rnd = acts.examples.RandomNumbers(seed=42)
 
@@ -143,15 +142,17 @@ else:
         s,
         trackingGeometry,
         field,
-        preSelectParticles=ParticleSelectorConfig(
-            rho=(0.0, 24 * u.mm),
-            absZ=(0.0, 1.0 * u.m),
-            eta=(-eta, eta),
-            pt=(150 * u.MeV, None),
-            removeNeutral=True,
-        )
-        if ttbar
-        else ParticleSelectorConfig(),
+        preSelectParticles=(
+            ParticleSelectorConfig(
+                rho=(0.0, 24 * u.mm),
+                absZ=(0.0, 1.0 * u.m),
+                eta=(-eta, eta),
+                pt=(150 * u.MeV, None),
+                removeNeutral=True,
+            )
+            if ttbar
+            else ParticleSelectorConfig()
+        ),
         enableInteractions=False,
         outputDirRoot=outputDir,
         # outputDirCsv=outputDir,
@@ -180,25 +181,28 @@ SeedingAlgorithmConfigArg = reconstruction.SeedingAlgorithmConfigArg
 initialVarInflation = None
 
 import numpy as np
-cotThetaMax = 1/(np.tan(2*np.arctan(np.exp(-eta))))# =1/tan(2×atan(e^(-eta)))
+
+cotThetaMax = 1 / (np.tan(2 * np.arctan(np.exp(-eta))))  # =1/tan(2×atan(e^(-eta)))
 maxSeedsPerSpM = 1
 
 seedFinderConfigArg = SeedFinderConfigArg(
-        r=(None, 200 * u.mm),  # rMin=default, 33mm
-        deltaR=(1 * u.mm, 60 * u.mm),
-        collisionRegion=(-250 * u.mm, 250 * u.mm),
-        z=(-2000 * u.mm, 2000 * u.mm),
-        maxSeedsPerSpM=maxSeedsPerSpM,
-        sigmaScattering=5,
-        radLengthPerSeed=0.1,
-        minPt=500 * u.MeV,
-        impactMax=3 * u.mm,
-        cotThetaMax=cotThetaMax # =1/tan(2×atan(e^(-eta)))
-        # cotThetaMax = 1000, # Hashing better perfs with that; in SPGrid: float zBinSize = config.cotThetaMax * config.deltaRMax; 
-        # int zBins = max(1, (int)std::floor((config.zMax - config.zMin) / zBinSize))
+    r=(None, 200 * u.mm),  # rMin=default, 33mm
+    deltaR=(1 * u.mm, 60 * u.mm),
+    collisionRegion=(-250 * u.mm, 250 * u.mm),
+    z=(-2000 * u.mm, 2000 * u.mm),
+    maxSeedsPerSpM=maxSeedsPerSpM,
+    sigmaScattering=5,
+    radLengthPerSeed=0.1,
+    minPt=500 * u.MeV,
+    impactMax=3 * u.mm,
+    cotThetaMax=cotThetaMax,  # =1/tan(2×atan(e^(-eta)))
+    # cotThetaMax = 1000, # Hashing better perfs with that; in SPGrid: float zBinSize = config.cotThetaMax * config.deltaRMax;
+    # int zBins = max(1, (int)std::floor((config.zMax - config.zMin) / zBinSize))
 )
 
-seedFinderOptionsArg: SeedFinderOptionsArg = SeedFinderOptionsArg(bFieldInZ=1.99724 * u.T)
+seedFinderOptionsArg: SeedFinderOptionsArg = SeedFinderOptionsArg(
+    bFieldInZ=1.99724 * u.T
+)
 seedFilterConfigArg: SeedFilterConfigArg = SeedFilterConfigArg()
 spacePointGridConfigArg: SpacePointGridConfigArg = SpacePointGridConfigArg()
 seedingAlgorithmConfigArg: SeedingAlgorithmConfigArg = SeedingAlgorithmConfigArg()
@@ -206,7 +210,11 @@ inputParticles: str = "particles"
 outputDirRoot = outputDir
 logLevel = None
 
-truthSeedRanges = TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-eta, eta), nHits=(9, None)) if ttbar else TruthSeedRanges()
+truthSeedRanges = (
+    TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-eta, eta), nHits=(9, None))
+    if ttbar
+    else TruthSeedRanges()
+)
 
 logLevel = acts.examples.defaultLogging(s, logLevel)()
 customLogLevel = acts.examples.defaultLogging(s, logLevel)
@@ -240,7 +248,7 @@ s.addWriter(
         level=customLogLevel(),
         # inputSpacepoints="spacepoints",
         inputSpacepoints=spacePoints,
-        filePath=str(outputDirRoot / "spacepoints.root")
+        filePath=str(outputDirRoot / "spacepoints.root"),
     )
 )
 
@@ -279,12 +287,16 @@ seedFinderConfig = acts.SeedFinderConfig(
         zMin=seedFinderConfigArg.z[0],
         zMax=seedFinderConfigArg.z[1],
         zOutermostLayers=(
-            seedFinderConfigArg.zOutermostLayers[0]
-            if seedFinderConfigArg.zOutermostLayers[0] is not None
-            else seedFinderConfigArg.z[0],
-            seedFinderConfigArg.zOutermostLayers[1]
-            if seedFinderConfigArg.zOutermostLayers[1] is not None
-            else seedFinderConfigArg.z[1],
+            (
+                seedFinderConfigArg.zOutermostLayers[0]
+                if seedFinderConfigArg.zOutermostLayers[0] is not None
+                else seedFinderConfigArg.z[0]
+            ),
+            (
+                seedFinderConfigArg.zOutermostLayers[1]
+                if seedFinderConfigArg.zOutermostLayers[1] is not None
+                else seedFinderConfigArg.z[1]
+            ),
         ),
         maxSeedsPerSpM=seedFinderConfigArg.maxSeedsPerSpM,
         cotThetaMax=seedFinderConfigArg.cotThetaMax,
@@ -308,10 +320,12 @@ seedFinderConfig = acts.SeedFinderConfig(
 )
 seedFinderOptions = acts.SeedFinderOptions(
     **acts.examples.defaultKWArgs(
-        beamPos=acts.Vector2(0.0, 0.0)
-        if seedFinderOptionsArg.beamPos == (None, None)
-        else acts.Vector2(
-            seedFinderOptionsArg.beamPos[0], seedFinderOptionsArg.beamPos[1]
+        beamPos=(
+            acts.Vector2(0.0, 0.0)
+            if seedFinderOptionsArg.beamPos == (None, None)
+            else acts.Vector2(
+                seedFinderOptionsArg.beamPos[0], seedFinderOptionsArg.beamPos[1]
+            )
         ),
         bFieldInZ=seedFinderOptionsArg.bFieldInZ,
     )
@@ -395,9 +409,7 @@ s.addAlgorithm(seedingAlg)
 seeds = seedingAlg.config.outputSeeds
 
 initialSigmas: Optional[list] = None
-particleHypothesis: Optional[
-        acts.ParticleHypothesis
-    ] = acts.ParticleHypothesis.pion
+particleHypothesis: Optional[acts.ParticleHypothesis] = acts.ParticleHypothesis.pion
 
 parEstimateAlg = acts.examples.TrackParamsEstimationAlgorithm(
     level=logLevel,
@@ -485,7 +497,7 @@ if outputDirRoot is not None:
         acts.examples.RootSeedWriter(
             level=customLogLevel(),
             inputSeeds=seeds,
-            filePath=str(outputDirRoot / "seeds.root")
+            filePath=str(outputDirRoot / "seeds.root"),
         )
     )
 

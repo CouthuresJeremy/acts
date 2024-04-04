@@ -48,7 +48,13 @@ from acts.examples.geant4 import TelescopeG4DetectorConstructionFactory
 if type(detector) is TelescopeDetector:
     TelescopeG4DetectorConstructionFactory(detector)
 
-s = acts.examples.Sequencer(events=100, numThreads=1, outputDir=str(outputDir), trackFpes=False, enableEventTiming=True)
+s = acts.examples.Sequencer(
+    events=100,
+    numThreads=1,
+    outputDir=str(outputDir),
+    trackFpes=False,
+    enableEventTiming=True,
+)
 
 if not ttbar_pu200:
     addParticleGun(
@@ -105,15 +111,17 @@ else:
         trackingGeometry,
         field,
         rnd=rnd,
-        preSelectParticles=ParticleSelectorConfig(
-            rho=(0.0 * u.mm, 28.0 * u.mm),
-            absZ=(0.0 * u.mm, 1.0 * u.m),
-            eta=(-4.0, 4.0),
-            pt=(150 * u.MeV, None),
-            removeNeutral=True,
-        )
-        if ttbar_pu200
-        else ParticleSelectorConfig(),
+        preSelectParticles=(
+            ParticleSelectorConfig(
+                rho=(0.0 * u.mm, 28.0 * u.mm),
+                absZ=(0.0 * u.mm, 1.0 * u.m),
+                eta=(-4.0, 4.0),
+                pt=(150 * u.MeV, None),
+                removeNeutral=True,
+            )
+            if ttbar_pu200
+            else ParticleSelectorConfig()
+        ),
         outputDirRoot=outputDir,
     )
 
@@ -130,9 +138,11 @@ addSeeding(
     s,
     trackingGeometry,
     field,
-    TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-4.0, 4.0), nHits=(9, None))
-    if ttbar_pu200
-    else TruthSeedRanges(),
+    (
+        TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-4.0, 4.0), nHits=(9, None))
+        if ttbar_pu200
+        else TruthSeedRanges()
+    ),
     seedingAlgorithm=SeedingAlgorithm.Default,
     *acts.examples.itk.itkSeedingAlgConfig(
         acts.examples.itk.InputSpacePointsType.PixelSpacePoints
@@ -154,7 +164,7 @@ s.addWriter(
     acts.examples.RootSpacepointWriter(
         level=acts.logging.INFO,
         inputSpacepoints="spacepoints",
-        filePath=str(outputDir / "spacepoints.root")
+        filePath=str(outputDir / "spacepoints.root"),
     )
 )
 
