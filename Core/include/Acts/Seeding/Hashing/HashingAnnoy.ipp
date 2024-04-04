@@ -25,7 +25,7 @@ namespace Acts {
 int GetBinIndex(double, double z, unsigned int zBins) {
   using Scalar = Acts::ActsScalar;
   Scalar binSize = 1100.0 / zBins;
-  int binIndex = (z - (-550) + 0.5 * binSize) / binSize;
+  int binIndex = (int)((z - (-550) + 0.5 * binSize) / binSize);
   // int binIndex = (z - (-550))/binSize;
   // Scalar z = 1100.0/zBins*binIndex + -550;
   return binIndex;
@@ -34,7 +34,7 @@ int GetBinIndex(double, double z, unsigned int zBins) {
 int GetBinIndexPhi(double phi, unsigned int phiBins) {
   using Scalar = Acts::ActsScalar;
   Scalar binSize = 2 * M_PI / phiBins;
-  int binIndex = (phi + M_PI) / binSize;
+  int binIndex = (int)((phi + M_PI) / binSize);
   return binIndex;
 }
 
