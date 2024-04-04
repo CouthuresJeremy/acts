@@ -605,7 +605,7 @@ struct DotProduct : Angular {
   }
 
   template <typename S, typename T>
-  static inline void init_node(Node<S, T>* n, int f) {}
+  static inline void init_node(Node<S, T>*, int) {}
 
   template <typename T, typename Node>
   static inline void copy_node(Node* dest, const Node* source, const int f) {
@@ -736,21 +736,19 @@ struct Hamming : Base {
     return dist;
   }
   template <typename S, typename T>
-  static inline bool margin(const Node<S, T>* n, const T* y, int f) {
+  static inline bool margin(const Node<S, T>* n, const T* y, int) {
     static const std::size_t n_bits = sizeof(T) * 8;
     T chunk = n->v[0] / n_bits;
     return (y[chunk] &
             (static_cast<T>(1) << (n_bits - 1 - (n->v[0] % n_bits)))) != 0;
   }
   template <typename S, typename T, typename Random>
-  static inline bool side(const Node<S, T>* n, const T* y, int f,
-                          Random& random) {
+  static inline bool side(const Node<S, T>* n, const T* y, int f, Random&) {
     return margin(n, y, f);
   }
   template <typename S, typename T, typename Random>
   static inline void create_split(const vector<Node<S, T>*>& nodes, int f,
-                                  std::size_t s, Random& random,
-                                  Node<S, T>* n) {
+                                  std::size_t, Random& random, Node<S, T>* n) {
     std::size_t cur_size = 0;
     std::size_t i = 0;
     int dim = f * 8 * sizeof(T);
@@ -791,7 +789,7 @@ struct Hamming : Base {
     return distance;
   }
   template <typename S, typename T>
-  static inline void init_node(Node<S, T>* n, int f) {}
+  static inline void init_node(Node<S, T>*, int) {}
   static const char* name() { return "hamming"; }
 };
 
@@ -853,7 +851,7 @@ struct Euclidean : Minkowski {
     return sqrt(std::max(distance, T(0)));
   }
   template <typename S, typename T>
-  static inline void init_node(Node<S, T>* n, int f) {}
+  static inline void init_node(Node<S, T>*, int) {}
   static const char* name() { return "euclidean"; }
 };
 
@@ -912,7 +910,7 @@ struct Manhattan : Minkowski {
     return std::max(distance, T(0));
   }
   template <typename S, typename T>
-  static inline void init_node(Node<S, T>* n, int f) {}
+  static inline void init_node(Node<S, T>*, int) {}
   static const char* name() { return "manhattan"; }
 };
 
