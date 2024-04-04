@@ -81,7 +81,8 @@ inline InternalSpacePoint<SpacePoint>::InternalSpacePoint(
       m_sp(sp) {}
 
 template <typename SpacePoint>
-inline bool operator<(const SpacePoint& lhs, const SpacePoint& rhs) {
+inline bool operator<(const InternalSpacePoint<SpacePoint>& lhs,
+                      const InternalSpacePoint<SpacePoint>& rhs) {
   // TODO would it be sufficient to check just the index under the assumption
   //   that the same measurement index always produces the same space point?
   // no need to check r since it is fully defined by x/y
