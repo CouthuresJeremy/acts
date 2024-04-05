@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-import os, argparse, pathlib, acts, acts.examples
+
+import os
+import argparse
+import pathlib
+
+import acts
+import acts.examples
 from acts.examples.simulation import (
     addParticleGun,
     MomentumConfig,
@@ -11,6 +17,7 @@ from acts.examples.simulation import (
     addGeant4,
     ParticleSelectorConfig,
     addDigitization,
+    addParticleSelection,
 )
 
 from acts.examples.reconstruction import (
@@ -166,6 +173,7 @@ config = Config(
     maxSeedsPerSpM=maxSeedsPerSpM,
     seedFinderConfig="TrackML",
     detector=DetectorName.generic,
+    # detector=DetectorName.ODD,
     # config = Config(mu=mu, bucketSize=bucketSize, maxSeedsPerSpM=maxSeedsPerSpM, seedFinderConfig="TrackML", detector=DetectorName.ODD,
     seedingAlgorithm=seedingAlgorithm,
     metric=metric,
@@ -183,8 +191,7 @@ config = Config(
 actsExamplesDir = getActsExamplesDirectory()
 
 if config.detector == DetectorName.ODD:
-    from common import getOpenDataDetectorDirectory
-    from acts.examples.odd import getOpenDataDetector
+    from acts.examples.odd import getOpenDataDetector, getOpenDataDetectorDirectory
 
     geoDir = getOpenDataDetectorDirectory()
 
@@ -194,7 +201,7 @@ if config.detector == DetectorName.ODD:
     oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
 
     detector, trackingGeometry, decorators = getOpenDataDetector(
-        geoDir, mdecorator=oddMaterialDeco
+        odd_dir=geoDir, mdecorator=oddMaterialDeco
     )
 
     digiConfig = oddDigiConfig
@@ -419,11 +426,10 @@ SpacePointGridConfigArg = reconstruction.SpacePointGridConfigArg
 SeedingAlgorithmConfigArg = reconstruction.SeedingAlgorithmConfigArg
 
 
-initialVarInflation: Optional[list] = None
-
 import numpy as np
 
 cotThetaMax = 1 / (np.tan(2 * np.arctan(np.exp(-eta))))  # =1/tan(2×atan(e^(-eta)))
+# Issue for TrackML and CKF for cotThetaMax with eta > 3.25 with commit d9f775f4155f1a13e316aa142e939ef7178ff665
 if config.seedFinderConfig == "TrackML":
     seedFinderConfigArg = SeedFinderConfigArg(
         r=(None, 200 * u.mm),  # rMin=default, 33mm
@@ -610,7 +616,6 @@ seedFinderConfig = acts.SeedFinderConfig(
         maxPtScattering=seedFinderConfigArg.maxPtScattering,
         zBinEdges=seedFinderConfigArg.zBinEdges,
         zBinsCustomLooping=seedFinderConfigArg.zBinsCustomLooping,
-        skipZMiddleBinSearch=seedFinderConfigArg.skipZMiddleBinSearch,
         rRangeMiddleSP=seedFinderConfigArg.rRangeMiddleSP,
         useVariableMiddleSPRange=seedFinderConfigArg.useVariableMiddleSPRange,
         binSizeR=seedFinderConfigArg.binSizeR,
@@ -750,7 +755,16 @@ else:
 
 seeds = seedingAlg.config.outputSeeds
 
-initialSigmas: Optional[list] = None
+initialSigmas: Optional[list] = [
+    1 * u.mm,
+    1 * u.mm,
+    1 * u.degree,
+    1 * u.degree,
+    0.1 / u.GeV,
+    1 * u.ns,
+]
+
+initialVarInflation: Optional[list] = [1.0] * 6
 particleHypothesis: Optional[acts.ParticleHypothesis] = acts.ParticleHypothesis.pion
 
 parEstimateAlg = acts.examples.TrackParamsEstimationAlgorithm(
