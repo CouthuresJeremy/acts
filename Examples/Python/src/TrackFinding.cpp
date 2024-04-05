@@ -16,8 +16,6 @@
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SeedFinderGbtsConfig.hpp"
 #include "Acts/Seeding/SeedFinderOrthogonalConfig.hpp"
-#include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
-#include "Acts/Seeding/Hashing/HashingTrainingConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/TrackFinding/MeasurementSelector.hpp"
 #include "Acts/Utilities/Logger.hpp"
@@ -28,7 +26,6 @@
 #include "ActsExamples/TrackFinding/MuonHoughSeeder.hpp"
 #include "ActsExamples/TrackFinding/SeedingAlgorithm.hpp"
 #include "ActsExamples/TrackFinding/SeedingAlgorithmHashing.hpp"
-#include "ActsExamples/TrackFinding/SeedingFTFAlgorithm.hpp"
 #include "ActsExamples/TrackFinding/SeedingOrthogonalAlgorithm.hpp"
 #include "ActsExamples/TrackFinding/SpacePointMaker.hpp"
 #include "ActsExamples/TrackFinding/TrackFindingAlgorithm.hpp"
@@ -198,27 +195,6 @@ void addTrackFinding(Context& ctx) {
     ACTS_PYTHON_MEMBER(seedConfirmation);
     ACTS_PYTHON_MEMBER(centralSeedConfirmationRange);
     ACTS_PYTHON_MEMBER(forwardSeedConfirmationRange);
-    ACTS_PYTHON_STRUCT_END();
-    patchKwargsConstructor(c);
-  }
-
-  {
-    using Config = Acts::HashingAlgorithmConfig;
-    auto c = py::class_<Config>(m, "HashingAlgorithmConfig").def(py::init<>());
-    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
-    ACTS_PYTHON_MEMBER(bucketSize);
-    ACTS_PYTHON_MEMBER(zBins);
-    ACTS_PYTHON_MEMBER(phiBins);
-    ACTS_PYTHON_STRUCT_END();
-    patchKwargsConstructor(c);
-  }
-
-  {
-    using Config = Acts::HashingTrainingConfig;
-    auto c = py::class_<Config>(m, "HashingTrainingConfig").def(py::init<>());
-    ACTS_PYTHON_STRUCT_BEGIN(c, Config);
-    ACTS_PYTHON_MEMBER(AnnoySeed);
-    ACTS_PYTHON_MEMBER(f);
     ACTS_PYTHON_STRUCT_END();
     patchKwargsConstructor(c);
   }
