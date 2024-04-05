@@ -8,18 +8,32 @@
 
 #include "ActsExamples/TrackFinding/SeedingAlgorithmHashing.hpp"
 
-#include "Acts/Seeding/BinFinder.hpp"
-#include "Acts/Seeding/BinnedSPGroup.hpp"
+#include "Acts/Definitions/Algebra.hpp"
+#include "Acts/EventData/SpacePointData.hpp"
+#include "Acts/Geometry/Extent.hpp"
+#include "Acts/Seeding/BinnedGroup.hpp"
 #include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
 #include "Acts/Seeding/Hashing/HashingTraining.hpp"
+#include "Acts/Seeding/InternalSpacePoint.hpp"
 #include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinder.hpp"
 #include "Acts/Surfaces/Surface.hpp"
+#include "Acts/Utilities/BinningType.hpp"
+#include "Acts/Utilities/Delegate.hpp"
+#include "Acts/Utilities/Grid.hpp"
+#include "Acts/Utilities/GridBinFinder.hpp"
+#include "Acts/Utilities/Helpers.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
 #include "ActsExamples/Framework/WhiteBoard.hpp"
 
+#include <cmath>
+#include <csignal>
+#include <cstddef>
+#include <iterator>
+#include <limits>
+#include <ostream>
 #include <stdexcept>
 
 namespace ActsExamples {
@@ -199,14 +213,17 @@ ActsExamples::SeedingAlgorithmHashing::SeedingAlgorithmHashing(
         });
   }
 
-  m_bottomBinFinder = std::make_shared<const Acts::BinFinder<SimSpacePoint>>(
-      m_cfg.zBinNeighborsBottom, m_cfg.numPhiNeighbors);
-  m_topBinFinder = std::make_shared<const Acts::BinFinder<SimSpacePoint>>(
-      m_cfg.zBinNeighborsTop, m_cfg.numPhiNeighbors);
+  m_bottomBinFinder = std::make_unique<const Acts::GridBinFinder<2ul>>(
+      m_cfg.numPhiNeighbors, m_cfg.zBinNeighborsBottom);
+  m_topBinFinder = std::make_unique<const Acts::GridBinFinder<2ul>>(
+      m_cfg.numPhiNeighbors, m_cfg.zBinNeighborsTop);
 
   m_cfg.seedFinderConfig.seedFilter =
       std::make_unique<Acts::SeedFilter<SimSpacePoint>>(m_cfg.seedFilterConfig);
-  m_seedFinder = Acts::SeedFinder<SimSpacePoint>(m_cfg.seedFinderConfig);
+  m_seedFinder =
+      Acts::SeedFinder<SimSpacePoint,
+                       Acts::CylindricalSpacePointGrid<SimSpacePoint>>(
+          m_cfg.seedFinderConfig);
   m_Hashing = Acts::HashingAlgorithm<const SimSpacePoint*,
                                      std::vector<const SimSpacePoint*>>(
       m_cfg.hashingConfig);
@@ -220,6 +237,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
   ACTS_DEBUG("Start of SeedingAlgorithmHashing execute");
   // seeding looks for nearly straight lines in r/z plane
   // it uses a grid to limit the search to neighbouring grid cells
+  using SpacePointPtrVector = std::vector<const SimSpacePoint*>;
 
   // construct the combined input container of space point pointers from all
   // configured input sources.
@@ -228,8 +246,6 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
   for (const auto& isp : m_inputSpacePoints) {
     nSpacePoints += (*isp)(ctx).size();
   }
-
-  using SpacePointPtrVector = std::vector<const SimSpacePoint*>;
 
   SpacePointPtrVector spacePointPtrs;
   spacePointPtrs.reserve(nSpacePoints);
@@ -242,13 +258,13 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
     }
   }
 
+  // construct the seeding tools
   // covariance tool, extracts covariances per spacepoint as required
-  auto extractGlobalQuantities =
-      [=](const SimSpacePoint& sp, float, float,
-          float) -> std::pair<Acts::Vector3, Acts::Vector2> {
+  auto extractGlobalQuantities = [=](const SimSpacePoint& sp, float, float,
+                                     float) {
     Acts::Vector3 position{sp.x(), sp.y(), sp.z()};
     Acts::Vector2 covariance{sp.varianceR(), sp.varianceZ()};
-    return std::make_pair(position, covariance);
+    return std::make_tuple(position, covariance, sp.t());
   };
 
   // Hashing Training
@@ -277,21 +293,27 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
       maxNSpacePoints, m_cfg.seedFinderConfig.useDetailedDoubleMeasurementInfo);
 
   for (const SpacePointPtrVector& bucket : bucketsPtrs) {
+    // extent used to store r range for middle spacepoint
+    Acts::Extent rRangeSPExtent;
     // construct the seeding tools
-    auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
-        m_cfg.gridConfig, m_cfg.gridOptions);
+    Acts::CylindricalSpacePointGrid<SimSpacePoint> grid =
+        Acts::CylindricalSpacePointGridCreator::createGrid<SimSpacePoint>(
+            m_cfg.gridConfig, m_cfg.gridOptions);
+    Acts::CylindricalSpacePointGridCreator::fillGrid(
+        m_cfg.seedFinderConfig, m_cfg.seedFinderOptions, grid, bucket.begin(),
+        bucket.end(), extractGlobalQuantities, rRangeSPExtent);
+
+    std::array<std::vector<std::size_t>, 2ul> navigation;
+    navigation[1ul] = m_cfg.seedFinderConfig.zBinsCustomLooping;
 
     state.spacePointData.clear();
 
-    // extent used to store r range for middle spacepoint
-    Acts::Extent rRangeSPExtent;
     // groups spacepoints
     // could be moved before the space point containers loop if is updated
     // dynamically
-    auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
-        bucket.begin(), bucket.end(), extractGlobalQuantities,
-        m_bottomBinFinder, m_topBinFinder, std::move(grid), rRangeSPExtent,
-        m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
+    auto spacePointsGrouping = Acts::CylindricalBinnedGroup<SimSpacePoint>(
+        std::move(grid), *m_bottomBinFinder, *m_topBinFinder,
+        std::move(navigation));
 
     // safely clamp double to float
     float up = Acts::clampValue<float>(

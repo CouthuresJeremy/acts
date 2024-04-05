@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/Hashing/HashingAlgorithm.hpp"
 #include "Acts/Seeding/Hashing/HashingAlgorithmConfig.hpp"
 #include "Acts/Seeding/Hashing/HashingTraining.hpp"
@@ -18,6 +17,7 @@
 #include "Acts/Seeding/SeedFinder.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
+#include "Acts/Utilities/GridBinFinder.hpp"
 #include "Acts/Utilities/Logger.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
@@ -65,8 +65,8 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
 
     Acts::SeedFilterConfig seedFilterConfig;
     Acts::SeedFinderConfig<SimSpacePoint> seedFinderConfig;
-    Acts::SpacePointGridConfig gridConfig;
-    Acts::SpacePointGridOptions gridOptions;
+    Acts::CylindricalSpacePointGridConfig gridConfig;
+    Acts::CylindricalSpacePointGridOptions gridOptions;
     Acts::SeedFinderOptions seedFinderOptions;
     Acts::HashingAlgorithmConfig hashingConfig;
     Acts::HashingTrainingConfig hashingTrainingConfig;
@@ -98,9 +98,12 @@ class SeedingAlgorithmHashing final : public IAlgorithm {
   const Config& config() const { return m_cfg; }
 
  private:
-  Acts::SeedFinder<SimSpacePoint> m_seedFinder;
-  std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_bottomBinFinder;
-  std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_topBinFinder;
+  Acts::SeedFinder<SimSpacePoint,
+                   Acts::CylindricalSpacePointGrid<SimSpacePoint>>
+      m_seedFinder;
+  std::unique_ptr<const Acts::GridBinFinder<2ul>> m_bottomBinFinder;
+  std::unique_ptr<const Acts::GridBinFinder<2ul>> m_topBinFinder;
+
   Config m_cfg;
 
   std::vector<std::unique_ptr<ReadDataHandle<SimSpacePointContainer>>>
