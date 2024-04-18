@@ -881,6 +881,7 @@ addCKFTracks(
     outputDirRoot=outputDir,
     # writeCovMat=True,
     writeTrajectories=False,
+    twoWay=False,
     # outputDirCsv=outputDir,
 )
 
