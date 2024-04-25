@@ -417,6 +417,21 @@ def addSeeding(
         )
 
         if outputDirRoot is not None:
+            if seedingAlgorithm != SeedingAlgorithm.TruthSmeared:
+                rootSpacepointsWriter = acts.examples.RootSpacepointWriter(
+                    level=logLevel,
+                    inputSpacepoints=spacePoints,
+                    filePath=str(outputDirRoot / "spacepoints.root"),
+                )
+                s.addWriter(rootSpacepointsWriter)
+
+            rootSeedsWriter = acts.examples.RootSeedWriter(
+                level=logLevel,
+                inputSeeds=seeds,
+                filePath=str(outputDirRoot / "seeds.root"),
+            )
+            s.addWriter(rootSeedsWriter)
+
             addSeedPerformanceWriters(
                 s,
                 outputDirRoot,
