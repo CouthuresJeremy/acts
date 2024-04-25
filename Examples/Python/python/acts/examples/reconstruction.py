@@ -219,8 +219,12 @@ def addSeeding(
     spacePointGridConfigArg: SpacePointGridConfigArg = SpacePointGridConfigArg(),
     seedingAlgorithmConfigArg: SeedingAlgorithmConfigArg = SeedingAlgorithmConfigArg(),
     houghTransformConfig: acts.examples.HoughTransformSeeder.Config = acts.examples.HoughTransformSeeder.Config(),
-    hashingTrainingConfigArg: HashingTrainingConfigArg = HashingTrainingConfigArg(),
-    hashingAlgorithmConfigArg: HashingAlgorithmConfigArg = HashingAlgorithmConfigArg(),
+    hashingTrainingConfigArg: Optional[
+        HashingTrainingConfigArg
+    ] = HashingTrainingConfigArg(),
+    hashingAlgorithmConfigArg: Optional[
+        HashingAlgorithmConfigArg
+    ] = HashingAlgorithmConfigArg(),
     truthEstimatedSeedingAlgorithmConfigArg: TruthEstimatedSeedingAlgorithmConfigArg = TruthEstimatedSeedingAlgorithmConfigArg(),
     particleHypothesis: Optional[
         acts.ParticleHypothesis
@@ -228,6 +232,7 @@ def addSeeding(
     inputParticles: str = "particles",
     outputDirRoot: Optional[Union[Path, str]] = None,
     outputDirCsv: Optional[Union[Path, str]] = None,
+    outputFormatPreference: Optional[str] = None,
     logLevel: Optional[acts.logging.Level] = None,
     rnd: Optional[acts.examples.RandomNumbers] = None,
 ) -> None:
@@ -279,6 +284,11 @@ def addSeeding(
         input particles name in the WhiteBoard
     outputDirRoot : Path|str, path, None
         the output folder for the Root output, None triggers no output
+    outputDirCsv : Path|str, path, None
+        the output folder for the Csv output, None triggers no output
+    outputFormatPreference : str, None
+        The output format preference for writers that support multiple formats.
+        Options are "root" or "csv". None triggers all formats.
     logLevel : acts.logging.Level, None
         logging level to override setting given in `s`
     rnd : RandomNumbers, None
@@ -417,6 +427,12 @@ def addSeeding(
         )
 
         if outputDirRoot is not None:
+            rootOutputPreference = (
+                outputFormatPreference is None
+                or outputFormatPreference == "root"
+                or outputDirCsv is None
+            )
+
             if seedingAlgorithm != SeedingAlgorithm.TruthSmeared:
                 rootSpacepointsWriter = acts.examples.RootSpacepointWriter(
                     level=logLevel,
@@ -425,12 +441,13 @@ def addSeeding(
                 )
                 s.addWriter(rootSpacepointsWriter)
 
-            rootSeedsWriter = acts.examples.RootSeedWriter(
-                level=logLevel,
-                inputSeeds=seeds,
-                filePath=str(outputDirRoot / "seeds.root"),
-            )
-            s.addWriter(rootSeedsWriter)
+            if rootOutputPreference:
+                rootSeedsWriter = acts.examples.RootSeedWriter(
+                    level=logLevel,
+                    inputSeeds=seeds,
+                    filePath=str(outputDirRoot / "seeds.root"),
+                )
+                s.addWriter(rootSeedsWriter)
 
             addSeedPerformanceWriters(
                 s,
@@ -446,20 +463,27 @@ def addSeeding(
         if outputDirCsv is not None:
             outputDirCsv = Path(outputDirCsv)
 
+            csvOutputPreference = (
+                outputFormatPreference is None
+                or outputFormatPreference == "csv"
+                or outputDirRoot is None
+            )
+
             if not outputDirCsv.exists():
                 outputDirCsv.mkdir()
 
-            csvSeedWriter = acts.examples.CsvSeedWriter(
-                level=logLevel,
-                inputTrackParameters=parEstimateAlg.config.outputTrackParameters,
-                inputSimSeeds=seeds,
-                inputSimHits="simhits",
-                inputMeasurementParticlesMap="measurement_particles_map",
-                inputMeasurementSimHitsMap="measurement_simhits_map",
-                outputDir=str(outputDirCsv),
-                fileName=str(f"seed.csv"),
-            )
-            s.addWriter(csvSeedWriter)
+            if csvOutputPreference:
+                csvSeedWriter = acts.examples.CsvSeedWriter(
+                    level=logLevel,
+                    inputTrackParameters=parEstimateAlg.config.outputTrackParameters,
+                    inputSimSeeds=seeds,
+                    inputSimHits="simhits",
+                    inputMeasurementParticlesMap="measurement_particles_map",
+                    inputMeasurementSimHitsMap="measurement_simhits_map",
+                    outputDir=str(outputDirCsv),
+                    fileName=str(f"seed.csv"),
+                )
+                s.addWriter(csvSeedWriter)
 
             if seedingAlgorithm == SeedingAlgorithm.Hashing:
                 s.addWriter(
