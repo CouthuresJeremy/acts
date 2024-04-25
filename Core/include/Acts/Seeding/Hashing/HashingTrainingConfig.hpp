@@ -13,7 +13,7 @@
 namespace Acts {
 
 struct HashingTrainingConfig {
-  /// Size of the buckets = number of hits in the bucket
+  /// Size of the buckets = number of space points in the bucket
   unsigned int AnnoySeed = 123456789;
 
   /// Number of features to use
