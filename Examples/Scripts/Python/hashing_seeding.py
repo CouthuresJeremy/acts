@@ -51,7 +51,7 @@ parser.add_argument(
     default=100,
 )
 parser.add_argument("--maxSeedsPerSpM", type=int, default=1)
-parser.add_argument("--seedingAlgorithm", type=str, default="HashingSeeding")
+parser.add_argument("--seedingAlgorithm", type=str, default="Hashing")
 parser.add_argument("--saveFilesSmall", type=bool, default=False)
 parser.add_argument("--saveFiles", type=bool, default=False)
 parser.add_argument("--AnnoySeed", type=int, default=123456789)
@@ -71,9 +71,10 @@ zBins = args.zBins
 phiBins = args.phiBins
 maxSeedsPerSpM = args.maxSeedsPerSpM
 
-seedingAlgorithm = SeedingAlgorithm(args.seedingAlgorithm)
+metric = HashingMetric[args.metric]
 
-metric = HashingMetric(args.metric)
+seedingAlgorithm = SeedingAlgorithm[args.seedingAlgorithm]
+
 
 if seedingAlgorithm == SeedingAlgorithm.Default:
     bucketSize = 0
@@ -102,7 +103,6 @@ Config = namedtuple(
         "mu",
         "bucketSize",
         "maxSeedsPerSpM",
-        "seedFinderConfig",
         "detector",
         "seedingAlgorithm",
         "metric",
@@ -115,7 +115,7 @@ Config = namedtuple(
         100,
         1000,
         DetectorName.generic,
-        SeedingAlgorithm.HashingSeeding,
+        SeedingAlgorithm.Hashing,
         HashingMetric.dphi,
         123456789,
         100_000,
@@ -208,9 +208,9 @@ def get_dir_config(config: Config):
 
     outDir += f"_maxSeedsPerSpM_{config.maxSeedsPerSpM}"
 
-    outDir += f"_seedFinderConfig_{extractEnumName(config.seedFinderConfig)}"
+    outDir += f"_seedFinderConfig_{'TrackML'}"
 
-    outDir += f"_seedingAlgorithm_{extractEnumName(config.seedingAlgorithm)}"
+    outDir += f"_seedingAlgorithm_{extractEnumName(config.seedingAlgorithm)}Seeding"
     if doHashing:
         if config.metric != "angular":
             outDir += f"_metric_{extractEnumName(config.metric)}"
@@ -337,7 +337,7 @@ addSeeding(
     initialSigmas=initialSigmas,
     initialVarInflation=initialVarInflation,
     outputDirRoot=outputDir,
-    outputDirCsv=outputDir,
+    outputDirCsv=outputDir if saveFiles else None,
 )
 
 addCKFTracks(
