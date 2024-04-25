@@ -338,6 +338,7 @@ addSeeding(
     initialVarInflation=initialVarInflation,
     outputDirRoot=outputDir,
     outputDirCsv=outputDir if saveFiles else None,
+    outputFormatPreference="root",
 )
 
 addCKFTracks(
