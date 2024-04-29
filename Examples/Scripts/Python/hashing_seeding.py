@@ -241,6 +241,7 @@ s = acts.examples.Sequencer(
     numThreads=1,
     outputDir=str(outputDir),
     trackFpes=False,
+    outputEventTimingFile="event_timing.tsv",
 )
 
 addPythia8(
