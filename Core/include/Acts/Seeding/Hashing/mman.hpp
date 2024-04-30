@@ -2,6 +2,10 @@
 // This is from https://code.google.com/p/mman-win32/
 //
 // Licensed under MIT
+/*
+ * Note: This file has been modified to meet the needs of the ACTS projects and
+ * differs from the original provided by Spotify AB.
+ */
 
 #pragma once
 
