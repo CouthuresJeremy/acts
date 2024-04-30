@@ -13,6 +13,7 @@
 #include <set>
 #include <vector>
 
+namespace Acts::Details::HashingGeometry {
 bool LayerSelection(double r2, double z) {
   bool isInside = (r2 > 25 * 25 && r2 < 40 * 40) && (z > -550 && z < 550);
   // if ((r2 < 25*25 || r2 > 40*40 || (z < -550 || z > 550))
@@ -21,7 +22,6 @@ bool LayerSelection(double r2, double z) {
   return isInside;
 }
 
-namespace Acts {
 int GetBinIndex(double, double z, unsigned int zBins) {
   using Scalar = Acts::ActsScalar;
   Scalar binSize = 1100.0 / zBins;
@@ -37,7 +37,9 @@ int GetBinIndexPhi(double phi, unsigned int phiBins) {
   int binIndex = (int)((phi + M_PI) / binSize);
   return binIndex;
 }
+}  // namespace Acts::Details::HashingGeometry
 
+namespace Acts {
 // template <typename AnnoyModel>
 template <typename external_spacepoint_t, typename SpacePointContainer>
 void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::
@@ -86,13 +88,13 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::
       Scalar r2 = x * x + y * y;
       // std::cout << "r2:" << r2 << std::endl;
 
-      if (!LayerSelection(r2, z)) {
+      if (!Acts::Details::HashingGeometry::LayerSelection(r2, z)) {
         // std::cout << "r2 skip" << std::endl;
         // m_bucketsSPMap[spacePointIndex] = bucket;
         continue;
       }
 
-      int binIndex = GetBinIndex(r2, z, zBins);
+      int binIndex = Acts::Details::HashingGeometry::GetBinIndex(r2, z, zBins);
       if (binIndex < 0 || (unsigned int)binIndex >= nBins) {
         throw std::runtime_error("binIndex outside of bins covering");
       }
@@ -133,7 +135,7 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::
       Scalar r2 = x * x + y * y;
       // std::cout << "r2:" << r2 << std::endl;
 
-      if (!LayerSelection(r2, z)) {
+      if (!Acts::Details::HashingGeometry::LayerSelection(r2, z)) {
         // std::cout << "r2 skip" << std::endl;
         // m_bucketsSPMap[spacePointIndex] = bucket;
         continue;
@@ -141,7 +143,8 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::
 
       Scalar phi = atan2(y, x);
 
-      int binIndex = GetBinIndexPhi(phi, phiBins);
+      int binIndex =
+          Acts::Details::HashingGeometry::GetBinIndexPhi(phi, phiBins);
       if (binIndex < 0 || (unsigned int)binIndex >= nBins) {
         throw std::runtime_error("binIndex outside of bins covering");
       }
