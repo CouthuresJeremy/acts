@@ -271,8 +271,8 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
   static thread_local std::vector<SpacePointPtrVector> bucketsPtrs;
   bucketsPtrs.clear();
   VectorPolicy bucketsPolicy(bucketsPtrs);
-  GenericBackInserter buckets_back_inserter(bucketsPolicy);
-  m_Hashing.execute(spacePointPtrs, &annoyModel, buckets_back_inserter);
+  GenericBackInserter bucketsBackInserter(bucketsPolicy);
+  m_Hashing.execute(spacePointPtrs, &annoyModel, bucketsBackInserter);
 
   // pre-compute the maximum size required so we only need to allocate once
   // doesn't combine the input containers of space point pointers
@@ -352,10 +352,10 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithmHashing::execute(
 
     for (const auto [bottom, middle, top] : spacePointsGrouping) {
       SetPolicy setPolicy(seedsSet);
-      GenericBackInserter back_inserter(setPolicy);
-      m_seedFinder.createSeedsForGroup(
-          m_cfg.seedFinderOptions, state, spacePointsGrouping.grid(),
-          back_inserter, bottom, middle, top, rMiddleSPRange);
+      GenericBackInserter backInserter(setPolicy);
+      m_seedFinder.createSeedsForGroup(m_cfg.seedFinderOptions, state,
+                                       spacePointsGrouping.grid(), backInserter,
+                                       bottom, middle, top, rMiddleSPRange);
     }
   }
 
