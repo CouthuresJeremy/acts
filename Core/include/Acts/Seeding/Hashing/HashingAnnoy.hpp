@@ -8,7 +8,7 @@
 
 #pragma once
 
-// #include "Acts/Seeding/Hashing/Annoylib.hpp"
+#include "Acts/Definitions/Algebra.hpp"
 
 #include <map>
 #include <set>
@@ -30,4 +30,26 @@ class HashingAnnoy {
   std::map<unsigned int, std::set<external_spacepoint_t>> m_bucketsSPMap;
 };
 }  // namespace Acts
+
+namespace Acts::detail {
+bool LayerSelection(double r2, double z) {
+  bool isInside = (r2 > 25 * 25 && r2 < 40 * 40) && (z > -550 && z < 550);
+  return isInside;
+}
+
+int GetBinIndex(double, double z, unsigned int zBins) {
+  using Scalar = Acts::ActsScalar;
+  Scalar binSize = 1100.0 / zBins;
+  int binIndex = (int)((z - (-550) + 0.5 * binSize) / binSize);
+  return binIndex;
+}
+
+int GetBinIndexPhi(double phi, unsigned int phiBins) {
+  using Scalar = Acts::ActsScalar;
+  Scalar binSize = 2 * M_PI / phiBins;
+  int binIndex = (int)((phi + M_PI) / binSize);
+  return binIndex;
+}
+}  // namespace Acts::detail
+
 #include "Acts/Seeding/Hashing/HashingAnnoy.ipp"
