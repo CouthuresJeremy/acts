@@ -14,6 +14,11 @@ for file in $(find  Core/include/ -name "*.hpp" | grep -v "/detail/"); do
     echo "$(date +%H:%M:%S)    $((100*ITER/N_FILES))%   check $file"
     out=$(printf "#include <${file:13}>\nint main() { return 0; }" | clang++ -std=c++20 -O0 -c -I "Core/include" -I "/usr/include/eigen3" -x c++ - 2>&1)
     if [[ "$?" -ne "0" ]]; then
+        if [[ "$out" == *"annoy"* ]]; then
+            echo "WARNING: Annoy is included by the Hashing algorithm but downloaded by cmake at the build step"
+            continue
+        fi
+
         echo "------------------------------------"
         echo "$out"
         echo "------------------------------------"
