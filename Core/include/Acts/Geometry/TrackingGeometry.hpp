@@ -49,7 +49,7 @@ class TrackingGeometry {
   /// Constructor
   ///
   /// @param highestVolume is the world volume
-  /// @param materialDecorator is a dediated decorator that can assign
+  /// @param materialDecorator is a dedicated decorator that can assign
   ///        surface or volume based material to the TrackingVolume
   /// @param hook Identifier hook to be applied to surfaces
   /// @param logger instance of a logger (defaulting to the "silent" one)

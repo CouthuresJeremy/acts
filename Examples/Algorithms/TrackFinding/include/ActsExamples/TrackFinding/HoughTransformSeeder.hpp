@@ -23,7 +23,7 @@
 //      phi : in radians
 //
 // Here, q/pT and phi_track (ie at phi at perigee) are unknown. This equation
-// forms a line in q/pT vs phi_track spac since the sin function above can be
+// forms a line in q/pT vs phi_track space since the sin function above can be
 // approximated with sin(x) ~ x. Each hit will have its own line based on its
 // position (phi and r). However, note that hits belonging to the same track
 // will have lines that intersect at the track's q/pT and phi. In this manner,
