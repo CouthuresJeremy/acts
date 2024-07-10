@@ -1,14 +1,145 @@
-From 80aa2d0c0d65b5446ee843e679faaa81b514a256 Mon Sep 17 00:00:00 2001
+From 535c819bb3566fc9d40b1b1712482518a397c3d9 Mon Sep 17 00:00:00 2001
 From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
-Date: Tue, 9 Jul 2024 14:55:48 +0200
-Subject: [PATCH] Modify annoy
+Date: Wed, 10 Jul 2024 10:24:39 +0200
+Subject: [PATCH 01/14] Null ptr
 
 ---
- src/annoylib.h | 149 ++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 123 insertions(+), 26 deletions(-)
+ src/annoylib.h | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
 diff --git a/src/annoylib.h b/src/annoylib.h
-index 492d9ca..52dcddf 100644
+index 492d9ca..f9d2b0f 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -827,12 +827,12 @@ class AnnoyIndexInterface {
+  public:
+   // Note that the methods with an **error argument will allocate memory and write the pointer to that string if error is non-NULL
+   virtual ~AnnoyIndexInterface() {};
+-  virtual bool add_item(S item, const T* w, char** error=NULL) = 0;
+-  virtual bool build(int q, int n_threads=-1, char** error=NULL) = 0;
+-  virtual bool unbuild(char** error=NULL) = 0;
+-  virtual bool save(const char* filename, bool prefault=false, char** error=NULL) = 0;
++  virtual bool add_item(S item, const T* w, char** error=nullptr) = 0;
++  virtual bool build(int q, int n_threads=-1, char** error=nullptr) = 0;
++  virtual bool unbuild(char** error=nullptr) = 0;
++  virtual bool save(const char* filename, bool prefault=false, char** error=nullptr) = 0;
+   virtual void unload() = 0;
+-  virtual bool load(const char* filename, bool prefault=false, char** error=NULL) = 0;
++  virtual bool load(const char* filename, bool prefault=false, char** error=nullptr) = 0;
+   virtual T get_distance(S i, S j) const = 0;
+   virtual void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances) const = 0;
+   virtual void get_nns_by_vector(const T* w, size_t n, int search_k, vector<S>* result, vector<T>* distances) const = 0;
+@@ -841,7 +841,7 @@ class AnnoyIndexInterface {
+   virtual void verbose(bool v) = 0;
+   virtual void get_item(S item, T* v) const = 0;
+   virtual void set_seed(R q) = 0;
+-  virtual bool on_disk_build(const char* filename, char** error=NULL) = 0;
++  virtual bool on_disk_build(const char* filename, char** error=nullptr) = 0;
+ };
+ 
+ template<typename S, typename T, typename Distance, typename Random, class ThreadedBuildPolicy>
+@@ -900,12 +900,12 @@ public:
+     return _f;
+   }
+ 
+-  bool add_item(S item, const T* w, char** error=NULL) {
++  bool add_item(S item, const T* w, char** error=nullptr) {
+     return add_item_impl(item, w, error);
+   }
+ 
+   template<typename W>
+-  bool add_item_impl(S item, const W& w, char** error=NULL) {
++  bool add_item_impl(S item, const W& w, char** error=nullptr) {
+     if (_loaded) {
+       set_error_from_string(error, "You can't add an item to a loaded index");
+       return false;
+@@ -930,7 +930,7 @@ public:
+     return true;
+   }
+     
+-  bool on_disk_build(const char* file, char** error=NULL) {
++  bool on_disk_build(const char* file, char** error=nullptr) {
+     _on_disk = true;
+ #ifndef _MSC_VER
+     _fd = open(file, O_RDWR | O_CREAT | O_TRUNC, (int) 0600);
+@@ -955,7 +955,7 @@ public:
+     return true;
+   }
+     
+-  bool build(int q, int n_threads=-1, char** error=NULL) {
++  bool build(int q, int n_threads=-1, char** error=nullptr) {
+     if (_loaded) {
+       set_error_from_string(error, "You can't build a loaded index");
+       return false;
+@@ -995,7 +995,7 @@ public:
+     return true;
+   }
+   
+-  bool unbuild(char** error=NULL) {
++  bool unbuild(char** error=nullptr) {
+     if (_loaded) {
+       set_error_from_string(error, "You can't unbuild a loaded index");
+       return false;
+@@ -1008,7 +1008,7 @@ public:
+     return true;
+   }
+ 
+-  bool save(const char* filename, bool prefault=false, char** error=NULL) {
++  bool save(const char* filename, bool prefault=false, char** error=nullptr) {
+     if (!_built) {
+       set_error_from_string(error, "You can't save an index that hasn't been built");
+       return false;
+@@ -1024,7 +1024,7 @@ public:
+ #endif
+ 
+       FILE *f = fopen(filename, "wb");
+-      if (f == NULL) {
++      if (f == nullptr) {
+         set_error_from_errno(error, "Unable to open");
+         return false;
+       }
+@@ -1046,7 +1046,7 @@ public:
+ 
+   void reinitialize() {
+     _fd = 0;
+-    _nodes = NULL;
++    _nodes = nullptr;
+     _loaded = false;
+     _n_items = 0;
+     _n_nodes = 0;
+@@ -1082,7 +1082,7 @@ public:
+     if (_verbose) annoylib_showUpdate("unloaded\n");
+   }
+ 
+-  bool load(const char* filename, bool prefault=false, char** error=NULL) {
++  bool load(const char* filename, bool prefault=false, char** error=nullptr) {
+ #ifndef _MSC_VER
+     _fd = open(filename, O_RDONLY, (int)0400);
+ #else
+@@ -1114,7 +1114,7 @@ public:
+       annoylib_showUpdate("prefault is set to true, but MAP_POPULATE is not defined on this platform");
+ #endif
+     }
+-    _nodes = (Node*)mmap(0, size, PROT_READ, flags, _fd, 0);
++    _nodes = (Node*)mmap(nullptr, size, PROT_READ, flags, _fd, 0);
+     _n_nodes = (S)(size / _s);
+ 
+     // Find the roots by scanning the end of the file and taking the nodes with most descendants
+-- 
+2.34.1
+
+
+From 4e325dc15d334227539a1ea58f95a00595326cba Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 10:28:25 +0200
+Subject: [PATCH 02/14] New metric and optimizations
+
+---
+ src/annoylib.h | 123 +++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 110 insertions(+), 13 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index f9d2b0f..d54dbee 100644
 --- a/src/annoylib.h
 +++ b/src/annoylib.h
 @@ -12,6 +12,10 @@
@@ -71,70 +202,6 @@ index 492d9ca..52dcddf 100644
  #ifdef ANNOYLIB_USE_AVX
  // Horizontal single sum of 256bit vector.
  inline float hsum256_ps_avx(__m256 v) {
-@@ -412,13 +449,13 @@ inline void two_means(const vector<Node*>& nodes, int f, Random& random, bool co
- 
- struct Base {
-   template<typename T, typename S, typename Node>
--  static inline void preprocess(void* nodes, size_t _s, const S node_count, const int f) {
-+  static inline void preprocess(void*, size_t, const S, const int) {
-     // Override this in specific metric structs below if you need to do any pre-processing
-     // on the entire set of nodes passed into this index.
-   }
- 
-   template<typename Node>
--  static inline void zero_value(Node* dest) {
-+  static inline void zero_value(Node*) {
-     // Initialize any fields that require sane defaults within this node.
-   }
- 
-@@ -547,7 +584,7 @@ struct DotProduct : Angular {
-   }
- 
-   template<typename S, typename T>
--  static inline void init_node(Node<S, T>* n, int f) {
-+  static inline void init_node(Node<S, T>*, int) {
-   }
- 
-   template<typename T, typename Node>
-@@ -671,17 +708,17 @@ struct Hamming : Base {
-     return dist;
-   }
-   template<typename S, typename T>
--  static inline bool margin(const Node<S, T>* n, const T* y, int f) {
-+  static inline bool margin(const Node<S, T>* n, const T* y, int) {
-     static const size_t n_bits = sizeof(T) * 8;
-     T chunk = n->v[0] / n_bits;
-     return (y[chunk] & (static_cast<T>(1) << (n_bits - 1 - (n->v[0] % n_bits)))) != 0;
-   }
-   template<typename S, typename T, typename Random>
--  static inline bool side(const Node<S, T>* n, const T* y, int f, Random& random) {
-+  static inline bool side(const Node<S, T>* n, const T* y, int f, Random &) {
-     return margin(n, y, f);
-   }
-   template<typename S, typename T, typename Random>
--  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
-+  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t, Random& random, Node<S, T>* n) {
-     size_t cur_size = 0;
-     size_t i = 0;
-     int dim = f * 8 * sizeof(T);
-@@ -720,7 +757,7 @@ struct Hamming : Base {
-     return distance;
-   }
-   template<typename S, typename T>
--  static inline void init_node(Node<S, T>* n, int f) {
-+  static inline void init_node(Node<S, T>*, int) {
-   }
-   static const char* name() {
-     return "hamming";
-@@ -784,7 +821,7 @@ struct Euclidean : Minkowski {
-     return sqrt(std::max(distance, T(0)));
-   }
-   template<typename S, typename T>
--  static inline void init_node(Node<S, T>* n, int f) {
-+  static inline void init_node(Node<S, T>*, int) {
-   }
-   static const char* name() {
-     return "euclidean";
 @@ -792,6 +829,35 @@ struct Euclidean : Minkowski {
  
  };
@@ -171,21 +238,12 @@ index 492d9ca..52dcddf 100644
  struct Manhattan : Minkowski {
    template<typename S, typename T>
    static inline T distance(const Node<S, T>* x, const Node<S, T>* y, int f) {
-@@ -815,7 +881,7 @@ struct Manhattan : Minkowski {
-     return std::max(distance, T(0));
-   }
-   template<typename S, typename T>
--  static inline void init_node(Node<S, T>* n, int f) {
-+  static inline void init_node(Node<S, T>*, int) {
-   }
-   static const char* name() {
-     return "manhattan";
 @@ -841,6 +907,7 @@ class AnnoyIndexInterface {
    virtual void verbose(bool v) = 0;
    virtual void get_item(S item, T* v) const = 0;
    virtual void set_seed(R q) = 0;
 +  virtual R get_seed() const = 0;
-   virtual bool on_disk_build(const char* filename, char** error=NULL) = 0;
+   virtual bool on_disk_build(const char* filename, char** error=nullptr) = 0;
  };
  
 @@ -869,14 +936,14 @@ public:
@@ -215,15 +273,14 @@ index 492d9ca..52dcddf 100644
      _s = offsetof(Node, v) + _f * sizeof(T); // Size of each node
      _verbose = false;
      _built = false;
-@@ -896,8 +963,37 @@ public:
+@@ -896,9 +963,38 @@ public:
      unload();
    }
  
 -  int get_f() const {
--    return _f;
 +  unsigned int get_f() const {
-+    return _f; 
-+  }
+     return _f;
+   }
 +  
 +  // Move constructor
 +  AnnoyIndex(AnnoyIndex &&other) noexcept
@@ -252,9 +309,10 @@ index 492d9ca..52dcddf 100644
 +    _fd = other._fd;
 +    _on_disk = other._on_disk;
 +    _built = other._built;
-   }
++  }
  
-   bool add_item(S item, const T* w, char** error=NULL) {
+   bool add_item(S item, const T* w, char** error=nullptr) {
+     return add_item_impl(item, w, error);
 @@ -911,6 +1007,9 @@ public:
        return false;
      }
@@ -287,23 +345,10 @@ index 492d9ca..52dcddf 100644
      for (size_t i = 0; i < _roots.size(); i++)
 -      memcpy(_get(_n_nodes + (S)i), _get(_roots[i]), _s);
 -    _n_nodes += _roots.size();
-+      memcpy(_get(_n_nodes++), _get(_roots[i]), _s);
++      memcpy(_get(_n_nodes + i), _get(_roots[i]), _s);
  
      if (_verbose) annoylib_showUpdate("has %d nodes\n", _n_nodes);
      
-@@ -1119,10 +1214,10 @@ public:
- 
-     // Find the roots by scanning the end of the file and taking the nodes with most descendants
-     _roots.clear();
--    S m = -1;
-+    S m = (S)-1;
-     for (S i = _n_nodes - 1; i >= 0; i--) {
-       S k = _get(i)->n_descendants;
--      if (m == -1 || k == m) {
-+      if (m == (S)-1 || k == m) {
-         _roots.push_back(i);
-         m = k;
-       } else {
 @@ -1175,6 +1270,8 @@ public:
      _seed = seed;
    }
@@ -322,14 +367,1270 @@ index 492d9ca..52dcddf 100644
          m->v[z] = 0;
  
        for (size_t i = 0; i < indices.size(); i++) {
-@@ -1425,7 +1522,7 @@ protected:
+-- 
+2.34.1
+
+
+From ba067c8aa116d9a33efd8878aaa1334573b3fd82 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 10:31:31 +0200
+Subject: [PATCH 03/14] Unused variables
+
+---
+ src/annoylib.h | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index d54dbee..575d8c4 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -449,13 +449,13 @@ inline void two_means(const vector<Node*>& nodes, int f, Random& random, bool co
+ 
+ struct Base {
+   template<typename T, typename S, typename Node>
+-  static inline void preprocess(void* nodes, size_t _s, const S node_count, const int f) {
++  static inline void preprocess(void* /*unused*/, size_t /*unused*/, const S /*unused*/, const int /*unused*/) {
+     // Override this in specific metric structs below if you need to do any pre-processing
+     // on the entire set of nodes passed into this index.
+   }
+ 
+   template<typename Node>
+-  static inline void zero_value(Node* dest) {
++  static inline void zero_value(Node* /*unused*/) {
+     // Initialize any fields that require sane defaults within this node.
+   }
+ 
+@@ -584,7 +584,7 @@ struct DotProduct : Angular {
+   }
+ 
+   template<typename S, typename T>
+-  static inline void init_node(Node<S, T>* n, int f) {
++  static inline void init_node(Node<S, T>* /*unused*/, int /*unused*/) {
+   }
+ 
+   template<typename T, typename Node>
+@@ -708,17 +708,17 @@ struct Hamming : Base {
+     return dist;
+   }
+   template<typename S, typename T>
+-  static inline bool margin(const Node<S, T>* n, const T* y, int f) {
++  static inline bool margin(const Node<S, T>* n, const T* y, int /*unused*/) {
+     static const size_t n_bits = sizeof(T) * 8;
+     T chunk = n->v[0] / n_bits;
+     return (y[chunk] & (static_cast<T>(1) << (n_bits - 1 - (n->v[0] % n_bits)))) != 0;
+   }
+   template<typename S, typename T, typename Random>
+-  static inline bool side(const Node<S, T>* n, const T* y, int f, Random& random) {
++  static inline bool side(const Node<S, T>* n, const T* y, int f, Random& /*unused*/) {
+     return margin(n, y, f);
+   }
+   template<typename S, typename T, typename Random>
+-  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
++  static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t /*unused*/, Random& random, Node<S, T>* n) {
+     size_t cur_size = 0;
+     size_t i = 0;
+     int dim = f * 8 * sizeof(T);
+@@ -757,7 +757,7 @@ struct Hamming : Base {
+     return distance;
+   }
+   template<typename S, typename T>
+-  static inline void init_node(Node<S, T>* n, int f) {
++  static inline void init_node(Node<S, T>* /*unused*/, int /*unused*/) {
+   }
+   static const char* name() {
+     return "hamming";
+@@ -821,7 +821,7 @@ struct Euclidean : Minkowski {
+     return sqrt(std::max(distance, T(0)));
+   }
+   template<typename S, typename T>
+-  static inline void init_node(Node<S, T>* n, int f) {
++  static inline void init_node(Node<S, T>* /*unused*/, int /*unused*/) {
+   }
+   static const char* name() {
+     return "euclidean";
+@@ -881,7 +881,7 @@ struct Manhattan : Minkowski {
+     return std::max(distance, T(0));
+   }
+   template<typename S, typename T>
+-  static inline void init_node(Node<S, T>* n, int f) {
++  static inline void init_node(Node<S, T>* /*unused*/, int /*unused*/) {
+   }
+   static const char* name() {
+     return "manhattan";
+@@ -1522,7 +1522,7 @@ protected:
  class AnnoyIndexSingleThreadedBuildPolicy {
  public:
    template<typename S, typename T, typename D, typename Random>
 -  static void build(AnnoyIndex<S, T, D, Random, AnnoyIndexSingleThreadedBuildPolicy>* annoy, int q, int n_threads) {
-+  static void build(AnnoyIndex<S, T, D, Random, AnnoyIndexSingleThreadedBuildPolicy>* annoy, int q, int) {
++  static void build(AnnoyIndex<S, T, D, Random, AnnoyIndexSingleThreadedBuildPolicy>* annoy, int q, int /*unused*/) {
      AnnoyIndexSingleThreadedBuildPolicy threaded_build_policy;
      annoy->thread_build(q, 0, threaded_build_policy);
+   }
+-- 
+2.34.1
+
+
+From f006d7ab70f34e7638c6c82434dedd4236fd947a Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 10:34:32 +0200
+Subject: [PATCH 04/14] Boolean instead of int
+
+---
+ src/annoylib.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index 575d8c4..4a1a939 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -1277,7 +1277,7 @@ public:
+     Random _random(_seed + thread_idx);
+ 
+     vector<S> thread_roots;
+-    while (1) {
++    while (true) {
+       if (q == -1) {
+         threaded_build_policy.lock_n_nodes();
+         if (_n_nodes >= 2 * _n_items) {
+-- 
+2.34.1
+
+
+From 9a53a61895edee46c5154e150fc1829c58307053 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 10:48:12 +0200
+Subject: [PATCH 05/14] Use '= default' to define a trivial destructor
+
+---
+ src/annoylib.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index 4a1a939..cbc5f2c 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -892,7 +892,7 @@ template<typename S, typename T, typename R = uint64_t>
+ class AnnoyIndexInterface {
+  public:
+   // Note that the methods with an **error argument will allocate memory and write the pointer to that string if error is non-NULL
+-  virtual ~AnnoyIndexInterface() {};
++  virtual ~AnnoyIndexInterface() = default;
+   virtual bool add_item(S item, const T* w, char** error=nullptr) = 0;
+   virtual bool build(int q, int n_threads=-1, char** error=nullptr) = 0;
+   virtual bool unbuild(char** error=nullptr) = 0;
+-- 
+2.34.1
+
+
+From 96b0b3f5d3c2f43df5e5b4154293e47ee381fbc3 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 10:53:14 +0200
+Subject: [PATCH 06/14] Use 'using' instead of 'typedef'
+
+---
+ src/annoylib.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index cbc5f2c..0c772a8 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -927,10 +927,10 @@ template<typename S, typename T, typename Distance, typename Random, class Threa
+    * in such a way that we at most use 2x as much memory as the vectors take.
+    */
+ public:
+-  typedef Distance D;
+-  typedef typename D::template Node<S, T> Node;
++  using D = Distance;
++  using Node = typename D::template Node<S, T>;
+ #if __cplusplus >= 201103L
+-  typedef typename std::remove_const<decltype(Random::default_seed)>::type R;
++  using R = typename std::remove_const<decltype(Random::default_seed)>::type;
+ #else
+   typedef typename Random::seed_type R;
+ #endif
+-- 
+2.34.1
+
+
+From 1bc318dbc745db2d6108a212e7816bbc3ef1eda9 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 12:25:17 +0200
+Subject: [PATCH 07/14] Statement should be inside braces
+
+---
+ src/annoylib.h | 112 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 72 insertions(+), 40 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index 0c772a8..4298f64 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -191,8 +191,9 @@ inline T dot(const T* x, const T* y, int f) {
+ template<typename T>
+ inline T manhattan_distance(const T* x, const T* y, int f) {
+   T d = 0.0;
+-  for (int i = 0; i < f; i++)
++  for (int i = 0; i < f; i++) {
+     d += fabs(x[i] - y[i]);
++  }
+   return d;
+ }
+ 
+@@ -433,13 +434,15 @@ inline void two_means(const vector<Node*>& nodes, int f, Random& random, bool co
+       continue;
+     }
+     if (di < dj) {
+-      for (int z = 0; z < f; z++)
++      for (int z = 0; z < f; z++) {
+         p->v[z] = (p->v[z] * ic + nodes[k]->v[z] / norm) / (ic + 1);
++      }
+       Distance::init_node(p, f);
+       ic++;
+     } else if (dj < di) {
+-      for (int z = 0; z < f; z++)
++      for (int z = 0; z < f; z++) {
+         q->v[z] = (q->v[z] * jc + nodes[k]->v[z] / norm) / (jc + 1);
++      }
+       Distance::init_node(q, f);
+       jc++;
+     }
+@@ -468,8 +471,9 @@ struct Base {
+   static inline void normalize(Node* node, int f) {
+     T norm = get_norm(node->v, f);
+     if (norm > 0) {
+-      for (int z = 0; z < f; z++)
++      for (int z = 0; z < f; z++) {
+         node->v[z] /= norm;
++      }
+     }
+   }
+ };
+@@ -507,8 +511,8 @@ struct Angular : Base {
+     T qq = y->norm ? y->norm : dot(y->v, y->v, f);
+     T pq = dot(x->v, y->v, f);
+     T ppqq = pp * qq;
+-    if (ppqq > 0) return 2.0 - 2.0 * pq / sqrt(ppqq);
+-    else return 2.0; // cos is 0
++    if (ppqq > 0) { return 2.0 - 2.0 * pq / sqrt(ppqq);
++    } else { return 2.0; } // cos is 0 
+   }
+   template<typename S, typename T>
+   static inline T margin(const Node<S, T>* n, const T* y, int f) {
+@@ -517,18 +521,20 @@ struct Angular : Base {
+   template<typename S, typename T, typename Random>
+   static inline bool side(const Node<S, T>* n, const T* y, int f, Random& random) {
+     T dot = margin(n, y, f);
+-    if (dot != 0)
++    if (dot != 0) {
+       return (dot > 0);
+-    else
++    } else {
+       return (bool)random.flip();
++    }
+   }
+   template<typename S, typename T, typename Random>
+   static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+     Node<S, T>* p = (Node<S, T>*)alloca(s);
+     Node<S, T>* q = (Node<S, T>*)alloca(s);
+     two_means<T, Random, Angular, Node<S, T> >(nodes, f, random, true, p, q);
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->v[z] = p->v[z] - q->v[z];
++    }
+     Base::normalize<T, Node<S, T> >(n, f);
+   }
+   template<typename T>
+@@ -540,8 +546,9 @@ struct Angular : Base {
+   }
+   template<typename T>
+   static inline T pq_distance(T distance, T margin, int child_nr) {
+-    if (child_nr == 0)
++    if (child_nr == 0) {
+       margin = -margin;
++    }
+     return std::min(distance, margin);
+   }
+   template<typename T>
+@@ -600,8 +607,9 @@ struct DotProduct : Angular {
+     DotProduct::zero_value(p); 
+     DotProduct::zero_value(q);
+     two_means<T, Random, DotProduct, Node<S, T> >(nodes, f, random, true, p, q);
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->v[z] = p->v[z] - q->v[z];
++    }
+     n->dot_factor = p->dot_factor - q->dot_factor;
+     DotProduct::normalize<T, Node<S, T> >(n, f);
+   }
+@@ -610,8 +618,9 @@ struct DotProduct : Angular {
+   static inline void normalize(Node* node, int f) {
+     T norm = sqrt(dot(node->v, node->v, f) + pow(node->dot_factor, 2));
+     if (norm > 0) {
+-      for (int z = 0; z < f; z++)
++      for (int z = 0; z < f; z++) {
+         node->v[z] /= norm;
++      }
+       node->dot_factor /= norm;
+     }
+   }
+@@ -624,10 +633,11 @@ struct DotProduct : Angular {
+   template<typename S, typename T, typename Random>
+   static inline bool side(const Node<S, T>* n, const T* y, int f, Random& random) {
+     T dot = margin(n, y, f);
+-    if (dot != 0)
++    if (dot != 0) {
+       return (dot > 0);
+-    else
++    } else {
+       return (bool)random.flip();
++    }
+   }
+ 
+   template<typename T>
+@@ -780,15 +790,17 @@ struct Minkowski : Base {
+   template<typename S, typename T, typename Random>
+   static inline bool side(const Node<S, T>* n, const T* y, int f, Random& random) {
+     T dot = margin(n, y, f);
+-    if (dot != 0)
++    if (dot != 0) {
+       return (dot > 0);
+-    else
++    } else {
+       return (bool)random.flip();
++    }
+   }
+   template<typename T>
+   static inline T pq_distance(T distance, T margin, int child_nr) {
+-    if (child_nr == 0)
++    if (child_nr == 0) {
+       margin = -margin;
++    }
+     return std::min(distance, margin);
+   }
+   template<typename T>
+@@ -809,12 +821,14 @@ struct Euclidean : Minkowski {
+     Node<S, T>* q = (Node<S, T>*)alloca(s);
+     two_means<T, Random, Euclidean, Node<S, T> >(nodes, f, random, false, p, q);
+ 
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->v[z] = p->v[z] - q->v[z];
++    }
+     Base::normalize<T, Node<S, T> >(n, f);
+     n->a = 0.0;
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->a += -n->v[z] * (p->v[z] + q->v[z]) / 2;
++    }
+   }
+   template<typename T>
+   static inline T normalized_distance(T distance) {
+@@ -843,12 +857,14 @@ struct AngularEuclidean : Minkowski {
+     two_means<T, Random, AngularEuclidean, Node<S, T>>(nodes, f, random, false,
+                                                        p, q);
+ 
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->v[z] = p->v[z] - q->v[z];
++    }
+     Base::normalize<T, Node<S, T>>(n, f);
+     n->a = 0.0;
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->a += -n->v[z] * (p->v[z] + q->v[z]) / 2;
++    }
+   }
+   template <typename T> static inline T normalized_distance(T distance) {
+     return sqrt(std::max(distance, T(0)));
+@@ -869,12 +885,14 @@ struct Manhattan : Minkowski {
+     Node<S, T>* q = (Node<S, T>*)alloca(s);
+     two_means<T, Random, Manhattan, Node<S, T> >(nodes, f, random, false, p, q);
+ 
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->v[z] = p->v[z] - q->v[z];
++    }
+     Base::normalize<T, Node<S, T> >(n, f);
+     n->a = 0.0;
+-    for (int z = 0; z < f; z++)
++    for (int z = 0; z < f; z++) {
+       n->a += -n->v[z] * (p->v[z] + q->v[z]) / 2;
++    }
+   }
+   template<typename T>
+   static inline T normalized_distance(T distance) {
+@@ -1007,8 +1025,9 @@ public:
+       return false;
+     }
+     _allocate_size(item + 1);
+-    if (item >= _n_items)
++    if (item >= _n_items) {
+       _n_items = item + 1;
++    }
+ 
+     Node* n = _get(item);
+ 
+@@ -1018,8 +1037,9 @@ public:
+     n->children[1] = 0;
+     n->n_descendants = 1;
+ 
+-    for (unsigned int z = 0; z < _f; z++)
++    for (unsigned int z = 0; z < _f; z++) {
+       n->v[z] = w[z];
++    }
+ 
+     D::init_node(n, _f);
+ 
+@@ -1071,8 +1091,9 @@ public:
+     // Also, copy the roots into the last segment of the array
+     // This way we can load them faster without reading the whole file
+     _allocate_size(_n_nodes + (S)_roots.size());
+-    for (size_t i = 0; i < _roots.size(); i++)
++    for (size_t i = 0; i < _roots.size(); i++) {
+       memcpy(_get(_n_nodes + i), _get(_roots[i]), _s);
++    }
+ 
+     if (_verbose) annoylib_showUpdate("has %d nodes\n", _n_nodes);
+     
+@@ -1225,12 +1246,13 @@ public:
+       }
+     }
+     // hacky fix: since the last root precedes the copy of all roots, delete it
+-    if (_roots.size() > 1 && _get(_roots.front())->children[0] == _get(_roots.back())->children[0])
++    if (_roots.size() > 1 && _get(_roots.front())->children[0] == _get(_roots.back())->children[0]) {
+       _roots.pop_back();
++    }
+     _loaded = true;
+     _built = true;
+     _n_items = m;
+-    if (_verbose) annoylib_showUpdate("found %zu roots with degree %d\n", _roots.size(), m);
++    if (_verbose) { annoylib_showUpdate("found %zu roots with degree %d\n", _roots.size(), m); }
+     return true;
+   }
+ 
+@@ -1291,7 +1313,7 @@ public:
+         }
+       }
+ 
+-      if (_verbose) annoylib_showUpdate("pass %zd...\n", thread_roots.size());
++      if (_verbose) { annoylib_showUpdate("pass %zd...\n", thread_roots.size()); }
+ 
+       vector<S> indices;
+       threaded_build_policy.lock_shared_nodes();
+@@ -1320,15 +1342,16 @@ protected:
+       if (!remap_memory_and_truncate(&_nodes, _fd, 
+           static_cast<size_t>(_s) * static_cast<size_t>(_nodes_size), 
+           static_cast<size_t>(_s) * static_cast<size_t>(new_nodes_size)) && 
+-          _verbose)
++          _verbose) {
+           annoylib_showUpdate("File truncation error\n");
++      }
+     } else {
+       _nodes = realloc(_nodes, _s * new_nodes_size);
+       memset((char *) _nodes + (_nodes_size * _s) / sizeof(char), 0, (new_nodes_size - _nodes_size) * _s);
+     }
+     
+     _nodes_size = new_nodes_size;
+-    if (_verbose) annoylib_showUpdate("Reallocating to %d nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes);
++    if (_verbose) { annoylib_showUpdate("Reallocating to %d nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes); }
+   }
+ 
+   void _allocate_size(S n, ThreadedBuildPolicy& threaded_build_policy) {
+@@ -1362,8 +1385,9 @@ protected:
+     // 1. We identify root nodes by the arguable logic that _n_items == n->n_descendants, regardless of how many descendants they actually have
+     // 2. Root nodes with only 1 child need to be a "dummy" parent
+     // 3. Due to the _n_items "hack", we need to be careful with the cases where _n_items <= _K or _n_items > _K
+-    if (indices.size() == 1 && !is_root)
++    if (indices.size() == 1 && !is_root) {
+       return indices[0];
++    }
+ 
+     if (indices.size() <= (size_t)_K && (!is_root || (size_t)_n_items <= (size_t)_K || indices.size() == 1)) {
+       threaded_build_policy.lock_n_nodes();
+@@ -1379,8 +1403,9 @@ protected:
+       // probably because gcc 4.8 goes overboard with optimizations.
+       // Using memcpy instead of std::copy for MSVC compatibility. #235
+       // Only copy when necessary to avoid crash in MSVC 9. #293
+-      if (!indices.empty())
++      if (!indices.empty()) {
+         memcpy(m->children, &indices[0], indices.size() * sizeof(S));
++      }
+ 
+       threaded_build_policy.unlock_shared_nodes();
+       return item;
+@@ -1391,8 +1416,9 @@ protected:
+     for (size_t i = 0; i < indices.size(); i++) {
+       S j = indices[i];
+       Node* n = _get(j);
+-      if (n)
++      if (n) {
+         children.push_back(n);
++      }
+     }
+ 
+     vector<S> children_indices[2];
+@@ -1414,23 +1440,26 @@ protected:
+         }
+       }
+ 
+-      if (_split_imbalance(children_indices[0], children_indices[1]) < 0.95)
++      if (_split_imbalance(children_indices[0], children_indices[1]) < 0.95) {
+         break;
++      }
+     }
+     threaded_build_policy.unlock_shared_nodes();
+ 
+     // If we didn't find a hyperplane, just randomize sides as a last option
+     while (_split_imbalance(children_indices[0], children_indices[1]) > 0.99) {
+-      if (_verbose)
++      if (_verbose) {
+         annoylib_showUpdate("\tNo hyperplane found (left has %zu children, right has %zu children)\n",
+           children_indices[0].size(), children_indices[1].size());
++      }
+ 
+       children_indices[0].clear();
+       children_indices[1].clear();
+ 
+       // Set the vector to 0.0
+-      for (unsigned int z = 0; z < _f; z++)
++      for (unsigned int z = 0; z < _f; z++) {
+         m->v[z] = 0;
++      }
+ 
+       for (size_t i = 0; i < indices.size(); i++) {
+         S j = indices[i];
+@@ -1501,19 +1530,22 @@ protected:
+     S last = -1;
+     for (size_t i = 0; i < nns.size(); i++) {
+       S j = nns[i]; 
+-      if (j == last)
++      if (j == last) {
+         continue;
++      }
+       last = j;
+-      if (_get(j)->n_descendants == 1)  // This is only to guard a really obscure case, #284
++      if (_get(j)->n_descendants == 1)  { // This is only to guard a really obscure case, #284
+         nns_dist.push_back(make_pair(D::distance(v_node, _get(j), _f), j));
++      }
+     }
+ 
+     size_t m = nns_dist.size();
+     size_t p = n < m ? n : m; // Return this many items
+     std::partial_sort(nns_dist.begin(), nns_dist.begin() + p, nns_dist.end());
+     for (size_t i = 0; i < p; i++) {
+-      if (distances)
++      if (distances) {
+         distances->push_back(D::normalized_distance(nns_dist[i].first));
++      }
+       result->push_back(nns_dist[i].second);
+     }
+   }
+-- 
+2.34.1
+
+
+From af19b6e338dbd9f380aed56fa1cf2a2fc98841fb Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 16:29:56 +0200
+Subject: [PATCH 08/14] Static casts
+
+---
+ src/annoylib.h | 90 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 45 insertions(+), 45 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index 4298f64..79a686c 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -131,7 +131,7 @@ namespace Annoy {
+ inline void set_error_from_errno(char **error, const char* msg) {
+   annoylib_showUpdate("%s: %s (%d)\n", msg, strerror(errno), errno);
+   if (error) {
+-    *error = (char *)malloc(256);  // TODO: win doesn't support snprintf
++    *error = static_cast<char *>(malloc(256));  // TODO: win doesn't support snprintf
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+     sprintf(*error, "%s: %s (%d)", msg, strerror(errno), errno);
+ #else
+@@ -143,7 +143,7 @@ inline void set_error_from_errno(char **error, const char* msg) {
+ inline void set_error_from_string(char **error, const char* msg) {
+   annoylib_showUpdate("%s\n", msg);
+   if (error) {
+-    *error = (char *)malloc(strlen(msg) + 1);
++    *error = static_cast<char *>(malloc(strlen(msg) + 1));
+     strcpy(*error, msg);
+   }
+ }
+@@ -174,7 +174,7 @@ namespace {
+ 
+ template<typename S, typename Node>
+ inline Node* get_node_ptr(const void* _nodes, const size_t _s, const S i) {
+-  return (Node*)((uint8_t *)_nodes + (_s * i));
++  return reinterpret_cast<Node*>(const_cast<uint8_t *>(static_cast<const uint8_t *>(_nodes) + (_s * i)));
+ }
+ 
+ template<typename T>
+@@ -524,13 +524,13 @@ struct Angular : Base {
+     if (dot != 0) {
+       return (dot > 0);
+     } else {
+-      return (bool)random.flip();
++      return static_cast<bool>(random.flip());
+     }
+   }
+   template<typename S, typename T, typename Random>
+   static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+-    Node<S, T>* p = (Node<S, T>*)alloca(s);
+-    Node<S, T>* q = (Node<S, T>*)alloca(s);
++    Node<S, T>* p = static_cast<Node<S, T>*>(alloca(s));
++    Node<S, T>* q = static_cast<Node<S, T>*>(alloca(s));
+     two_means<T, Random, Angular, Node<S, T> >(nodes, f, random, true, p, q);
+     for (int z = 0; z < f; z++) {
+       n->v[z] = p->v[z] - q->v[z];
+@@ -602,8 +602,8 @@ struct DotProduct : Angular {
+ 
+   template<typename S, typename T, typename Random>
+   static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+-    Node<S, T>* p = (Node<S, T>*)alloca(s);
+-    Node<S, T>* q = (Node<S, T>*)alloca(s);
++    Node<S, T>* p = static_cast<Node<S, T>*>(alloca(s));
++    Node<S, T>* q = static_cast<Node<S, T>*>(alloca(s));
+     DotProduct::zero_value(p); 
+     DotProduct::zero_value(q);
+     two_means<T, Random, DotProduct, Node<S, T> >(nodes, f, random, true, p, q);
+@@ -636,7 +636,7 @@ struct DotProduct : Angular {
+     if (dot != 0) {
+       return (dot > 0);
+     } else {
+-      return (bool)random.flip();
++      return static_cast<bool>(random.flip());
+     }
+   }
+ 
+@@ -691,7 +691,7 @@ struct Hamming : Base {
+ 
+   template<typename T>
+   static inline T pq_distance(T distance, T margin, int child_nr) {
+-    return distance - (margin != (unsigned int) child_nr);
++    return distance - (margin != static_cast<unsigned int>(child_nr));
+   }
+ 
+   template<typename T>
+@@ -704,10 +704,10 @@ struct Hamming : Base {
+     // calculate std::bitset::count for v > 32bit. Uses the generalized
+     // approach by Eric Cole.
+     // See https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSet64
+-    v = v - ((v >> 1) & (T)~(T)0/3);
+-    v = (v & (T)~(T)0/15*3) + ((v >> 2) & (T)~(T)0/15*3);
+-    v = (v + (v >> 4)) & (T)~(T)0/255*15;
+-    return (T)(v * ((T)~(T)0/255)) >> (sizeof(T) - 1) * 8;
++    v = v - ((v >> 1) & static_cast<T>(~static_cast<T>(0/3)));
++    v = (v & static_cast<T>(~static_cast<T>(0/15*3))) + ((v >> 2) & static_cast<T>(~static_cast<T>(0/15*3)));
++    v = (v + (v >> 4)) & static_cast<T>(~static_cast<T>(0/255*15));
++    return static_cast<T>(v * (static_cast<T>(~static_cast<T>(0/255)))) >> (sizeof(T) - 1) * 8;
+   }
+   template<typename S, typename T>
+   static inline T distance(const Node<S, T>* x, const Node<S, T>* y, int f) {
+@@ -793,7 +793,7 @@ struct Minkowski : Base {
+     if (dot != 0) {
+       return (dot > 0);
+     } else {
+-      return (bool)random.flip();
++      return static_cast<bool>(random.flip());
+     }
+   }
+   template<typename T>
+@@ -817,8 +817,8 @@ struct Euclidean : Minkowski {
+   }
+   template<typename S, typename T, typename Random>
+   static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+-    Node<S, T>* p = (Node<S, T>*)alloca(s);
+-    Node<S, T>* q = (Node<S, T>*)alloca(s);
++    Node<S, T>* p = static_cast<Node<S, T>*>(alloca(s));
++    Node<S, T>* q = static_cast<Node<S, T>*>(alloca(s));
+     two_means<T, Random, Euclidean, Node<S, T> >(nodes, f, random, false, p, q);
+ 
+     for (int z = 0; z < f; z++) {
+@@ -852,8 +852,8 @@ struct AngularEuclidean : Minkowski {
+   static inline void create_split(const vector<Node<S, T> *> &nodes, int f,
+                                   size_t s, Random &random,
+                                   Node<S, T> *n) {
+-    Node<S, T> *p = (Node<S, T> *)alloca(s);
+-    Node<S, T> *q = (Node<S, T> *)alloca(s);
++    Node<S, T> *p = static_cast<Node<S, T> *>(alloca(s));
++    Node<S, T> *q = static_cast<Node<S, T> *>(alloca(s));
+     two_means<T, Random, AngularEuclidean, Node<S, T>>(nodes, f, random, false,
+                                                        p, q);
+ 
+@@ -881,8 +881,8 @@ struct Manhattan : Minkowski {
+   }
+   template<typename S, typename T, typename Random>
+   static inline void create_split(const vector<Node<S, T>*>& nodes, int f, size_t s, Random& random, Node<S, T>* n) {
+-    Node<S, T>* p = (Node<S, T>*)alloca(s);
+-    Node<S, T>* q = (Node<S, T>*)alloca(s);
++    Node<S, T>* p = static_cast<Node<S, T>*>(alloca(s));
++    Node<S, T>* q = static_cast<Node<S, T>*>(alloca(s));
+     two_means<T, Random, Manhattan, Node<S, T> >(nodes, f, random, false, p, q);
+ 
+     for (int z = 0; z < f; z++) {
+@@ -974,7 +974,7 @@ public:
+     _s = offsetof(Node, v) + _f * sizeof(T); // Size of each node
+     _verbose = false;
+     _built = false;
+-    _K = (S) (((size_t) (_s - offsetof(Node, children))) / sizeof(S)); // Max number of descendants to fit into node
++    _K = static_cast<S>((static_cast<size_t>(_s - offsetof(Node, children))) / sizeof(S)); // Max number of descendants to fit into node
+     reinitialize(); // Reset everything
+   }
+   ~AnnoyIndex() {
+@@ -1064,9 +1064,9 @@ public:
+       return false;
+     }
+ #ifdef MAP_POPULATE
+-    _nodes = (Node*) mmap(0, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, _fd, 0);
++    _nodes = static_cast<Node*>(mmap(0, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, _fd, 0));
+ #else
+-    _nodes = (Node*) mmap(0, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, 0);
++    _nodes = static_cast<Node*>(mmap(0, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, 0));
+ #endif
+     return true;
+   }
+@@ -1090,7 +1090,7 @@ public:
+ 
+     // Also, copy the roots into the last segment of the array
+     // This way we can load them faster without reading the whole file
+-    _allocate_size(_n_nodes + (S)_roots.size());
++    _allocate_size(_n_nodes + static_cast<S>(_roots.size()));
+     for (size_t i = 0; i < _roots.size(); i++) {
+       memcpy(_get(_n_nodes + i), _get(_roots[i]), _s);
+     }
+@@ -1145,7 +1145,7 @@ public:
+         return false;
+       }
+ 
+-      if (fwrite(_nodes, _s, _n_nodes, f) != (size_t) _n_nodes) {
++      if (fwrite(_nodes, _s, _n_nodes, f) != static_cast<size_t>(_n_nodes)) {
+         set_error_from_errno(error, "Unable to write");
+         return false;
+       }
+@@ -1230,15 +1230,15 @@ public:
+       annoylib_showUpdate("prefault is set to true, but MAP_POPULATE is not defined on this platform");
+ #endif
+     }
+-    _nodes = (Node*)mmap(nullptr, size, PROT_READ, flags, _fd, 0);
+-    _n_nodes = (S)(size / _s);
++    _nodes = static_cast<Node*>(mmap(nullptr, size, PROT_READ, flags, _fd, 0));
++    _n_nodes = static_cast<S>(size / _s);
+ 
+     // Find the roots by scanning the end of the file and taking the nodes with most descendants
+     _roots.clear();
+-    S m = -1;
++    S m = static_cast<S>(-1);
+     for (S i = _n_nodes - 1; i >= 0; i--) {
+       S k = _get(i)->n_descendants;
+-      if (m == -1 || k == m) {
++      if (m == static_cast<S>(-1) || k == m) {
+         _roots.push_back(i);
+         m = k;
+       } else {
+@@ -1275,7 +1275,7 @@ public:
+   }
+ 
+   S get_n_trees() const {
+-    return (S)_roots.size();
++    return static_cast<S>(_roots.size());
+   }
+ 
+   void verbose(bool v) {
+@@ -1308,7 +1308,7 @@ public:
+         }
+         threaded_build_policy.unlock_n_nodes();
+       } else {
+-        if (thread_roots.size() >= (size_t)q) {
++        if (thread_roots.size() >= static_cast<size_t>(q)) {
+           break;
+         }
+       }
+@@ -1335,7 +1335,7 @@ public:
+ protected:
+   void _reallocate_nodes(S n) {
+     const double reallocation_factor = 1.3;
+-    S new_nodes_size = std::max(n, (S) ((_nodes_size + 1) * reallocation_factor));
++    S new_nodes_size = std::max(n, static_cast<S>((_nodes_size + 1) * reallocation_factor));
+     void *old = _nodes;
+     
+     if (_on_disk) {
+@@ -1347,7 +1347,7 @@ protected:
+       }
+     } else {
+       _nodes = realloc(_nodes, _s * new_nodes_size);
+-      memset((char *) _nodes + (_nodes_size * _s) / sizeof(char), 0, (new_nodes_size - _nodes_size) * _s);
++      memset(static_cast<char *>(_nodes) + (_nodes_size * _s) / sizeof(char), 0, (new_nodes_size - _nodes_size) * _s);
+     }
+     
+     _nodes_size = new_nodes_size;
+@@ -1373,8 +1373,8 @@ protected:
+   }
+ 
+   double _split_imbalance(const vector<S>& left_indices, const vector<S>& right_indices) {
+-    double ls = (float)left_indices.size();
+-    double rs = (float)right_indices.size();
++    double ls = static_cast<float>(left_indices.size());
++    double rs = static_cast<float>(right_indices.size());
+     float f = ls / (ls + rs + 1e-9);  // Avoid 0/0
+     return std::max(f, 1-f);
+   }
+@@ -1389,7 +1389,7 @@ protected:
+       return indices[0];
+     }
+ 
+-    if (indices.size() <= (size_t)_K && (!is_root || (size_t)_n_items <= (size_t)_K || indices.size() == 1)) {
++    if (indices.size() <= static_cast<size_t>(_K) && (!is_root || static_cast<size_t>(_n_items) <= static_cast<size_t>(_K) || indices.size() == 1)) {
+       threaded_build_policy.lock_n_nodes();
+       _allocate_size(_n_nodes + 1, threaded_build_policy);
+       S item = _n_nodes++;
+@@ -1397,7 +1397,7 @@ protected:
+ 
+       threaded_build_policy.lock_shared_nodes();
+       Node* m = _get(item);
+-      m->n_descendants = is_root ? _n_items : (S)indices.size();
++      m->n_descendants = is_root ? _n_items : static_cast<S>(indices.size());
+ 
+       // Using std::copy instead of a loop seems to resolve issues #3 and #13,
+       // probably because gcc 4.8 goes overboard with optimizations.
+@@ -1422,7 +1422,7 @@ protected:
+     }
+ 
+     vector<S> children_indices[2];
+-    Node* m = (Node*)alloca(_s);
++    Node* m = static_cast<Node*>(alloca(_s));
+ 
+     for (int attempt = 0; attempt < 3; attempt++) {
+       children_indices[0].clear();
+@@ -1468,9 +1468,9 @@ protected:
+       }
+     }
+ 
+-    int flip = (children_indices[0].size() > children_indices[1].size());
++    int flip = static_cast<int>(children_indices[0].size() > children_indices[1].size());
+ 
+-    m->n_descendants = is_root ? _n_items : (S)indices.size();
++    m->n_descendants = is_root ? _n_items : static_cast<S>(indices.size());
+     for (int side = 0; side < 2; side++) {
+       // run _make_tree for the smallest child first (for cache locality)
+       m->children[side^flip] = _make_tree(children_indices[side^flip], false, _random, threaded_build_policy);
+@@ -1489,7 +1489,7 @@ protected:
+   }
+ 
+   void _get_all_nns(const T* v, size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
+-    Node* v_node = (Node *)alloca(_s);
++    Node* v_node = static_cast<Node *>(alloca(_s));
+     D::template zero_value<Node>(v_node);
+     memcpy(v_node->v, v, sizeof(T) * _f);
+     D::init_node(v_node, _f);
+@@ -1505,7 +1505,7 @@ protected:
+     }
+ 
+     std::vector<S> nns;
+-    while (nns.size() < (size_t)search_k && !q.empty()) {
++    while (nns.size() < static_cast<size_t>(search_k) && !q.empty()) {
+       const pair<T, S>& top = q.top();
+       T d = top.first;
+       S i = top.second;
+@@ -1586,13 +1586,13 @@ public:
+     if (n_threads == -1) {
+       // If the hardware_concurrency() value is not well defined or not computable, it returns 0.
+       // We guard against this by using at least 1 thread.
+-      n_threads = std::max(1, (int)std::thread::hardware_concurrency());
++      n_threads = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
+     }
+ 
+     vector<std::thread> threads(n_threads);
+ 
+     for (int thread_idx = 0; thread_idx < n_threads; thread_idx++) {
+-      int trees_per_thread = q == -1 ? -1 : (int)floor((q + thread_idx) / n_threads);
++      int trees_per_thread = q == -1 ? -1 : static_cast<int>(floor((q + thread_idx) / n_threads));
+ 
+       threads[thread_idx] = std::thread(
+         &AnnoyIndex<S, T, D, Random, AnnoyIndexMultiThreadedBuildPolicy>::thread_build,
+-- 
+2.34.1
+
+
+From a86697dc3e8ec83ac0c578e633b423218be26537 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 16:35:25 +0200
+Subject: [PATCH 09/14] Unused variables
+
+---
+ src/annoylib.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index 79a686c..fd494fb 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -870,7 +870,7 @@ struct AngularEuclidean : Minkowski {
+     return sqrt(std::max(distance, T(0)));
+   }
+   template <typename S, typename T>
+-  static inline void init_node(Node<S, T> *, int) {}
++  static inline void init_node(Node<S, T> * /*unused*/, int /*unused*/) {}
+   static const char *name() { return "angular_euclidean"; }
+ };
+ 
+-- 
+2.34.1
+
+
+From 0de03f8308858af50f2b3be5aa00b04eb51e0306 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 16:43:49 +0200
+Subject: [PATCH 10/14] Fix implicit boolean conversions
+
+---
+ src/annoylib.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index fd494fb..0d49260 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -130,7 +130,7 @@ namespace Annoy {
+ 
+ inline void set_error_from_errno(char **error, const char* msg) {
+   annoylib_showUpdate("%s: %s (%d)\n", msg, strerror(errno), errno);
+-  if (error) {
++  if (error != nullptr) {
+     *error = static_cast<char *>(malloc(256));  // TODO: win doesn't support snprintf
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+     sprintf(*error, "%s: %s (%d)", msg, strerror(errno), errno);
+@@ -142,7 +142,7 @@ inline void set_error_from_errno(char **error, const char* msg) {
+ 
+ inline void set_error_from_string(char **error, const char* msg) {
+   annoylib_showUpdate("%s\n", msg);
+-  if (error) {
++  if (error != nullptr) {
+     *error = static_cast<char *>(malloc(strlen(msg) + 1));
+     strcpy(*error, msg);
+   }
+@@ -1173,7 +1173,7 @@ public:
+   }
+ 
+   void unload() {
+-    if (_on_disk && _fd) {
++    if (_on_disk && (_fd != 0)) {
+ #ifndef _MSC_VER
+       close(_fd);
+ #else
+@@ -1181,7 +1181,7 @@ public:
+ #endif
+       munmap(_nodes, _s * _nodes_size);
+     } else {
+-      if (_fd) {
++      if (_fd != 0) {
+         // we have mmapped data
+ #ifndef _MSC_VER
+         close(_fd);
+@@ -1189,7 +1189,7 @@ public:
+         _close(_fd);
+ #endif
+         munmap(_nodes, _n_nodes * _s);
+-      } else if (_nodes) {
++      } else if (_nodes != nullptr) {
+         // We have heap allocated data
+         free(_nodes);
+       }
+@@ -1216,7 +1216,7 @@ public:
+     } else if (size == 0) {
+       set_error_from_errno(error, "Size of file is zero");
+       return false;
+-    } else if (size % _s) {
++    } else if ((size % _s) != 0u) {
+       // Something is fishy with this index!
+       set_error_from_errno(error, "Index size is not a multiple of vector size. Ensure you are opening using the same metric you used to create the index.");
+       return false;
+-- 
+2.34.1
+
+
+From 8c70d83ce4c9dd3f4578ca254951004a10f54a23 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 16:43:58 +0200
+Subject: [PATCH 11/14] Redundant cast to the same type
+
+---
+ src/annoylib.h | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index 0d49260..abfb7ca 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -982,7 +982,7 @@ public:
+   }
+ 
+   unsigned int get_f() const {
+-    return _f;
++    return _f; 
+   }
+   
+   // Move constructor
+@@ -1049,9 +1049,9 @@ public:
+   bool on_disk_build(const char* file, char** error=nullptr) {
+     _on_disk = true;
+ #ifndef _MSC_VER
+-    _fd = open(file, O_RDWR | O_CREAT | O_TRUNC, (int) 0600);
++    _fd = open(file, O_RDWR | O_CREAT | O_TRUNC, 0600);
+ #else
+-    _fd = _open(file, _O_RDWR | _O_CREAT | _O_TRUNC, (int) 0600);
++    _fd = _open(file, _O_RDWR | _O_CREAT | _O_TRUNC, 0600);
+ #endif
+     if (_fd == -1) {
+       set_error_from_errno(error, "Unable to open");
+@@ -1064,9 +1064,9 @@ public:
+       return false;
+     }
+ #ifdef MAP_POPULATE
+-    _nodes = static_cast<Node*>(mmap(0, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, _fd, 0));
++    _nodes = static_cast<Node*>(mmap(nullptr, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, _fd, 0));
+ #else
+-    _nodes = static_cast<Node*>(mmap(0, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, 0));
++    _nodes = static_cast<Node*>(mmap(nullptr, _s * _nodes_size, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, 0));
+ #endif
+     return true;
+   }
+@@ -1200,9 +1200,9 @@ public:
+ 
+   bool load(const char* filename, bool prefault=false, char** error=nullptr) {
+ #ifndef _MSC_VER
+-    _fd = open(filename, O_RDONLY, (int)0400);
++    _fd = open(filename, O_RDONLY, 0400);
+ #else
+-    _fd = _open(filename, _O_RDONLY, (int)0400);
++    _fd = _open(filename, _O_RDONLY, 0400);
+ #endif
+     if (_fd == -1) {
+       set_error_from_errno(error, "Unable to open");
+@@ -1404,7 +1404,7 @@ protected:
+       // Using memcpy instead of std::copy for MSVC compatibility. #235
+       // Only copy when necessary to avoid crash in MSVC 9. #293
+       if (!indices.empty()) {
+-        memcpy(m->children, &indices[0], indices.size() * sizeof(S));
++          memcpy(m->children, &indices[0], indices.size() * sizeof(S));
+       }
+ 
+       threaded_build_policy.unlock_shared_nodes();
+-- 
+2.34.1
+
+
+From 6ca95b01b174d92fc9d9a541c54468c976cf8a68 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 17:35:02 +0200
+Subject: [PATCH 12/14] Annotate functions with 'override'
+
+---
+ src/annoylib.h | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index abfb7ca..57740e8 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -977,7 +977,7 @@ public:
+     _K = static_cast<S>((static_cast<size_t>(_s - offsetof(Node, children))) / sizeof(S)); // Max number of descendants to fit into node
+     reinitialize(); // Reset everything
+   }
+-  ~AnnoyIndex() {
++  ~AnnoyIndex() override {
+     unload();
+   }
+ 
+@@ -1014,7 +1014,7 @@ public:
+     _built = other._built;
+   }
+ 
+-  bool add_item(S item, const T* w, char** error=nullptr) {
++  bool add_item(S item, const T* w, char** error=nullptr) override {
+     return add_item_impl(item, w, error);
+   }
+ 
+@@ -1046,7 +1046,7 @@ public:
+     return true;
+   }
+     
+-  bool on_disk_build(const char* file, char** error=nullptr) {
++  bool on_disk_build(const char* file, char** error=nullptr) override {
+     _on_disk = true;
+ #ifndef _MSC_VER
+     _fd = open(file, O_RDWR | O_CREAT | O_TRUNC, 0600);
+@@ -1071,7 +1071,7 @@ public:
+     return true;
+   }
+     
+-  bool build(int q, int n_threads=-1, char** error=nullptr) {
++  bool build(int q, int n_threads=-1, char** error=nullptr) override {
+     if (_loaded) {
+       set_error_from_string(error, "You can't build a loaded index");
+       return false;
+@@ -1111,7 +1111,7 @@ public:
+     return true;
+   }
+   
+-  bool unbuild(char** error=nullptr) {
++  bool unbuild(char** error=nullptr) override {
+     if (_loaded) {
+       set_error_from_string(error, "You can't unbuild a loaded index");
+       return false;
+@@ -1124,7 +1124,7 @@ public:
+     return true;
+   }
+ 
+-  bool save(const char* filename, bool prefault=false, char** error=nullptr) {
++  bool save(const char* filename, bool prefault=false, char** error=nullptr) override {
+     if (!_built) {
+       set_error_from_string(error, "You can't save an index that hasn't been built");
+       return false;
+@@ -1172,7 +1172,7 @@ public:
+     _roots.clear();
+   }
+ 
+-  void unload() {
++  void unload() override {
+     if (_on_disk && (_fd != 0)) {
+ #ifndef _MSC_VER
+       close(_fd);
+@@ -1198,7 +1198,7 @@ public:
+     if (_verbose) annoylib_showUpdate("unloaded\n");
+   }
+ 
+-  bool load(const char* filename, bool prefault=false, char** error=nullptr) {
++  bool load(const char* filename, bool prefault=false, char** error=nullptr) override {
+ #ifndef _MSC_VER
+     _fd = open(filename, O_RDONLY, 0400);
+ #else
+@@ -1256,43 +1256,43 @@ public:
+     return true;
+   }
+ 
+-  T get_distance(S i, S j) const {
++  T get_distance(S i, S j) const override {
+     return D::normalized_distance(D::distance(_get(i), _get(j), _f));
+   }
+ 
+-  void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
++  void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances) const override {
+     // TODO: handle OOB
+     const Node* m = _get(item);
+     _get_all_nns(m->v, n, search_k, result, distances);
+   }
+ 
+-  void get_nns_by_vector(const T* w, size_t n, int search_k, vector<S>* result, vector<T>* distances) const {
++  void get_nns_by_vector(const T* w, size_t n, int search_k, vector<S>* result, vector<T>* distances) const override {
+     _get_all_nns(w, n, search_k, result, distances);
+   }
+ 
+-  S get_n_items() const {
++  S get_n_items() const override {
+     return _n_items;
+   }
+ 
+-  S get_n_trees() const {
++  S get_n_trees() const override {
+     return static_cast<S>(_roots.size());
+   }
+ 
+-  void verbose(bool v) {
++  void verbose(bool v) override {
+     _verbose = v;
+   }
+ 
+-  void get_item(S item, T* v) const {
++  void get_item(S item, T* v) const override {
+     // TODO: handle OOB
+     Node* m = _get(item);
+     memcpy(v, m->v, (_f) * sizeof(T));
+   }
+ 
+-  void set_seed(R seed) {
++  void set_seed(R seed) override {
+     _seed = seed;
+   }
+ 
+-  R get_seed() const { return _seed; }
++  R get_seed() const override { return _seed; }
+ 
+   void thread_build(int q, int thread_idx, ThreadedBuildPolicy& threaded_build_policy) {
+     // Each thread needs its own seed, otherwise each thread would be building the same tree(s)
+-- 
+2.34.1
+
+
+From 111829a5d9a8dba23b2409685071e194c3077c03 Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 18:45:36 +0200
+Subject: [PATCH 13/14] Fix clang not seeing the initializion of fields through
+ reinitialize
+
+---
+ src/annoylib.h | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/src/annoylib.h b/src/annoylib.h
+index 57740e8..65aeef9 100644
+--- a/src/annoylib.h
++++ b/src/annoylib.h
+@@ -975,7 +975,15 @@ public:
+     _verbose = false;
+     _built = false;
+     _K = static_cast<S>((static_cast<size_t>(_s - offsetof(Node, children))) / sizeof(S)); // Max number of descendants to fit into node
+-    reinitialize(); // Reset everything
++    _fd = 0;
++    _nodes = nullptr;
++    _loaded = false;
++    _n_items = 0;
++    _n_nodes = 0;
++    _nodes_size = 0;
++    _on_disk = false;
++    _seed = Random::default_seed;
++    _roots.clear();
+   }
+   ~AnnoyIndex() override {
+     unload();
+-- 
+2.34.1
+
+
+From 399c12f8db7e0114c8545fcc61bb7d244867b5de Mon Sep 17 00:00:00 2001
+From: Jeremy Couthures <jeremy.couthures@lapp.in2p3.fr>
+Date: Wed, 10 Jul 2024 17:35:11 +0200
+Subject: [PATCH 14/14] Static casts
+
+---
+ src/kissrandom.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/kissrandom.h b/src/kissrandom.h
+index 0559133..3e92747 100644
+--- a/src/kissrandom.h
++++ b/src/kissrandom.h
+@@ -47,7 +47,7 @@ struct Kiss32Random {
+     // Multiply-with-carry
+     uint64_t t = 698769069ULL * z + c;
+     c = t >> 32;
+-    z = (uint32_t) t;
++    z = static_cast<uint32_t>(t);
+ 
+     return x + y + z;
+   }
+@@ -97,7 +97,7 @@ struct Kiss64Random {
+     uint64_t t = (x<<58)+c;
+     c = (x>>6);
+     x += t;
+-    c += (x<t);
++    c += static_cast<uint64_t>(x<t);
+ 
+     return x + y + z;
    }
 -- 
 2.34.1
