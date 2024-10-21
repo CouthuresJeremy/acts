@@ -34,11 +34,18 @@ void HashingAlgorithm<external_spacepoint_t, SpacePointContainer>::execute(
   const unsigned int zBins = m_cfg.zBins;
   const unsigned int phiBins = m_cfg.phiBins;
 
+  // Get the layer selection from the configuration
+  const double layerRMin = m_cfg.layerRMin;
+  const double layerRMax = m_cfg.layerRMax;
+  const double layerZMin = m_cfg.layerZMin;
+  const double layerZMax = m_cfg.layerZMax;
+
   HashingAnnoy<external_spacepoint_t, SpacePointContainer>*
       AnnoyHashingInstance =
           new HashingAnnoy<external_spacepoint_t, SpacePointContainer>();
-  AnnoyHashingInstance->ComputeSpacePointsBuckets(annoyModel, spacePoints,
-                                                  bucketSize, zBins, phiBins);
+  AnnoyHashingInstance->ComputeSpacePointsBuckets(
+      annoyModel, spacePoints, bucketSize, zBins, phiBins, layerRMin, layerRMax,
+      layerZMin, layerZMax);
 
   map_t bucketsSPMap = AnnoyHashingInstance->m_bucketsSPMap;
   unsigned int nBuckets = (unsigned int)bucketsSPMap.size();

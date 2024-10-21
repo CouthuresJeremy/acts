@@ -26,21 +26,26 @@ class HashingAnnoy {
           unsigned int, double, Annoy::AngularEuclidean, Annoy::Kiss32Random,
           Annoy::AnnoyIndexSingleThreadedBuildPolicy>* annoyModel,
       const SpacePointContainer& spacePoints, const unsigned int bucketSize,
-      const unsigned int zBins, const unsigned int phiBins);
+      const unsigned int zBins, const unsigned int phiBins,
+      const double layerRMin, const double layerRMax, const double layerZMin,
+      const double layerZMax);
   std::map<unsigned int, std::set<external_spacepoint_t>> m_bucketsSPMap;
 };
 }  // namespace Acts
 
 namespace Acts::detail {
-inline bool LayerSelection(double r2, double z) {
-  bool isInside = (r2 > 25 * 25 && r2 < 40 * 40) && (z > -550 && z < 550);
+inline bool LayerSelection(double layerRMin, double layerRMax, double layerZMin,
+                           double layerZMax, double r2, double z) {
+  bool isInside = (r2 > layerRMin * layerRMin && r2 < layerRMax * layerRMax) &&
+                  (z > layerZMin && z < layerZMax);
   return isInside;
 }
 
-inline int GetBinIndex(double, double z, unsigned int zBins) {
+inline int GetBinIndex(double layerZMin, double layerZMax, double z,
+                       unsigned int zBins) {
   using Scalar = Acts::ActsScalar;
-  Scalar binSize = 1100.0 / zBins;
-  int binIndex = (int)((z - (-550) + 0.5 * binSize) / binSize);
+  Scalar binSize = (layerZMax - layerZMin) / zBins;
+  int binIndex = (int)((z - layerZMin + 0.5 * binSize) / binSize);
   return binIndex;
 }
 

@@ -21,7 +21,9 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::
             unsigned int, double, Annoy::AngularEuclidean, Annoy::Kiss32Random,
             Annoy::AnnoyIndexSingleThreadedBuildPolicy>* annoyModel,
         const SpacePointContainer& spacePoints, const unsigned int bucketSize,
-        const unsigned int zBins, const unsigned int phiBins) {
+        const unsigned int zBins, const unsigned int phiBins,
+        const double layerRMin, const double layerRMax, const double layerZMin,
+        const double layerZMax) {
   using Scalar = Acts::ActsScalar;
 
   static thread_local std::vector<std::set<external_spacepoint_t>>
@@ -57,11 +59,12 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::
       // Helix transform
       Scalar r2 = x * x + y * y;
 
-      if (!Acts::detail::LayerSelection(r2, z)) {
+      if (!Acts::detail::LayerSelection(layerRMin, layerRMax, layerZMin,
+                                        layerZMax, r2, z)) {
         continue;
       }
 
-      int binIndex = Acts::detail::GetBinIndex(r2, z, zBins);
+      int binIndex = Acts::detail::GetBinIndex(layerZMin, layerZMax, z, zBins);
       if (binIndex < 0 || (unsigned int)binIndex >= nBins) {
         throw std::runtime_error("binIndex outside of bins covering");
       }
@@ -90,7 +93,8 @@ void HashingAnnoy<external_spacepoint_t, SpacePointContainer>::
       // Helix transform
       Scalar r2 = x * x + y * y;
 
-      if (!Acts::detail::LayerSelection(r2, z)) {
+      if (!Acts::detail::LayerSelection(layerRMin, layerRMax, layerZMin,
+                                        layerZMax, r2, z)) {
         continue;
       }
 
