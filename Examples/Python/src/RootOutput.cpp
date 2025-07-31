@@ -84,7 +84,7 @@ void addRootOutput(Context& ctx) {
 
   ACTS_PYTHON_DECLARE_WRITER(ActsExamples::RootParticleWriter, mex,
                              "RootParticleWriter", inputParticles, filePath,
-                             fileMode, treeName);
+                             fileMode, treeName, referencePoint);
 
   ACTS_PYTHON_DECLARE_WRITER(ActsExamples::RootVertexWriter, mex,
                              "RootVertexWriter", inputVertices, filePath,
