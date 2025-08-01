@@ -10,11 +10,9 @@
 
 #include "Acts/Definitions/TrackParametrization.hpp"
 #include "Acts/Definitions/Units.hpp"
-// #include "Acts/EventData/GenericBoundTrackParameters.hpp"
 #include "Acts/Surfaces/PerigeeSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/Utilities/Helpers.hpp"
-// #include "Acts/Utilities/Intersection.hpp"
 #include "Acts/Utilities/VectorHelpers.hpp"
 #include "ActsExamples/EventData/SimParticle.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
@@ -167,14 +165,6 @@ ActsExamples::ProcessCode ActsExamples::RootParticleWriter::writeT(
     // Initialize the truth particle info
     float d0 = NaNfloat;
     float z0 = NaNfloat;
-
-    // // Get the perigee surface
-    // const Acts::Surface* pSurface =
-    //     track.hasReferenceSurface() ? &track.referenceSurface() : nullptr;
-
-    // Construct a perigee surface as the target surface
-    // auto pSurface = Acts::Surface::makeShared<Acts::PerigeeSurface>(
-    //     Acts::Vector3{0., 0., 0.});
 
     auto pSurface = Acts::Surface::makeShared<Acts::PerigeeSurface>(
         Acts::Vector3(m_cfg.referencePoint[0], m_cfg.referencePoint[1],
