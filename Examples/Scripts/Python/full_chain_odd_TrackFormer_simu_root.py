@@ -132,7 +132,7 @@ parser.add_argument(
     action=argparse.BooleanOptionalAction,
 )
 parser.add_argument(
-    "--output-csv", 
+    "--output-csv",
     help="Switch csv output on/off",
     default=True,
     action=argparse.BooleanOptionalAction,
@@ -155,6 +155,10 @@ args = parser.parse_args()
 print(args)
 
 outputDir = args.output
+# Create output directory if it does not exist
+if not outputDir.exists():
+    outputDir.mkdir()
+
 ambi_ML = args.ambi_solver == "ML"
 ambi_scoring = args.ambi_solver == "scoring"
 ambi_config = args.ambi_config
@@ -327,7 +331,7 @@ else:
                 outputStem="hits",
             )
         )
-        
+
     if args.output_root:
         rootSimHitWriter = acts.examples.RootSimHitWriter(
             level=logLevel,
