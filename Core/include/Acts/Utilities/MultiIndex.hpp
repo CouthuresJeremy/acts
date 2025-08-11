@@ -104,12 +104,6 @@ class MultiIndex {
   /// @return Reference to this MultiIndex for chaining
   constexpr MultiIndex& set(std::size_t lvl, Value val) {
     assert((lvl < kNumLevels) && "Index level outside allowed range");
-    if (val > maxValue(lvl)) {
-      throw std::out_of_range(
-          "Value " + std::to_string(val) + " for index level " +
-          std::to_string(lvl) +
-          " exceeds allowed range (max=" + std::to_string(maxValue(lvl)) + ")");
-    }
     // mask of valid bits at the encoded positions for the index level
     Value shiftedMask = (mask(lvl) << shift(lvl));
     // value of the index level shifted to its encoded position
@@ -117,14 +111,6 @@ class MultiIndex {
     // combine existing values with the value for the index level
     m_value = (m_value & ~shiftedMask) | (shiftedValue & shiftedMask);
     return *this;
-  }
-
-  /// @brief Return the maximum allowed value for a specific index level
-  /// @param lvl Level index to query maximum value for
-  /// @return Maximum value that can be stored at the specified level
-  constexpr std::size_t maxValue(std::size_t lvl) const {
-    assert((lvl < kNumLevels) && "Index level outside allowed range");
-    return (1 << s_bits.at(lvl)) - 1;
   }
 
   /// Create index with the selected level increased and levels below zeroed.

@@ -6,7 +6,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "Acts/Utilities/MultiIndex.hpp"
@@ -60,7 +59,11 @@ BOOST_AUTO_TEST_CASE(index32_set) {
   BOOST_CHECK_EQUAL(idx.level(1), 0u);
   BOOST_CHECK_EQUAL(idx.level(2), 0u);
   // set a specific level outside the valid range, should be truncated
-  BOOST_CHECK_THROW(idx.set(2, 0xfff), std::out_of_range);
+  idx.set(2, 0xfff);
+  BOOST_CHECK_EQUAL(idx.value(), 0x001800ffu);
+  BOOST_CHECK_EQUAL(idx.level(0), 24u);
+  BOOST_CHECK_EQUAL(idx.level(1), 0u);
+  BOOST_CHECK_EQUAL(idx.level(2), 255u);
 }
 
 BOOST_AUTO_TEST_CASE(index32_set_overflow) {
@@ -73,8 +76,8 @@ BOOST_AUTO_TEST_CASE(index32_set_overflow) {
   // check that values above max are truncated
   std::size_t lvl = 0;
   for (auto maxValue : maxValues) {
-    BOOST_CHECK_THROW(Index32::Zeros().set(lvl, maxValue + 1),
-                      std::out_of_range);
+    BOOST_CHECK_EQUAL(Index32::Zeros().set(lvl, maxValue + 1),
+                      Index32::Zeros().set(lvl, 0u));
     lvl += 1;
   }
 }
@@ -90,8 +93,8 @@ BOOST_AUTO_TEST_CASE(index64_set_overflow) {
   // check that values above max are truncated
   std::size_t lvl = 0;
   for (auto maxValue : maxValues) {
-    BOOST_CHECK_THROW(Index64::Zeros().set(lvl, maxValue + 1),
-                      std::out_of_range);
+    BOOST_CHECK_EQUAL(Index64::Zeros().set(lvl, maxValue + 1),
+                      Index64::Zeros().set(lvl, 0u));
     lvl += 1;
   }
 }
