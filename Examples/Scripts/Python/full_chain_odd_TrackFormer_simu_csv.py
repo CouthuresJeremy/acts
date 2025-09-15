@@ -546,5 +546,37 @@ if args.reco:
             writePerformance=False,
             writeTrackSummary=True,
         )
+    # CsvTrackParameterWriter
+    outputDirCsv = outputDir if args.output_csv else None
+    from pathlib import Path
 
+    def customLogLevel():
+        return acts.logging.INFO
+
+    writeSummary = True
+
+    if outputDirCsv is not None:
+        outputDirCsv = Path(outputDirCsv)
+        if not outputDirCsv.exists():
+            outputDirCsv.mkdir()
+
+        if writeSummary:
+            csvWriter = acts.examples.CsvTrackWriter(
+                level=customLogLevel(),
+                inputTracks="ckf_tracks",
+                inputMeasurementParticlesMap="measurement_particles_map",
+                outputDir=str(outputDirCsv),
+                fileName=str(f"tracks_ckf_400.csv"),
+                ptMin=400 * u.MeV,
+            )
+            s.addWriter(csvWriter)
+            csvWriter = acts.examples.CsvTrackWriter(
+                level=customLogLevel(),
+                inputTracks="ambi_tracks",
+                inputMeasurementParticlesMap="measurement_particles_map",
+                outputDir=str(outputDirCsv),
+                fileName=str(f"tracks_ambi_400.csv"),
+                ptMin=400 * u.MeV,
+            )
+            s.addWriter(csvWriter)
 s.run()
