@@ -186,13 +186,15 @@ ActsExamples::ProcessCode ActsExamples::RootParticleWriter::writeT(
                       m_cfg.referencePoint[2]));
 
     // Start from truth curvilinear parameters (position, direction, q/p)
-    const Acts::Vector3 startPos = particle.position();   // world coordinates
+    const Acts::Vector4 startPos =
+        particle.fourPosition();  // world coordinates + time
     const Acts::Vector3 startDir = particle.direction();  // unit vector
-    const Acts::ActsScalar qOverP = particle.qOverP();    // ACTS units
-    auto intersection = pSurface
-                            ->intersect(ctx.geoContext, startPos, startDir,
-                                        Acts::BoundaryTolerance::Infinite())
-                            .closest();
+    const auto qOverP = particle.qOverP();                // ACTS units
+    auto intersection =
+        pSurface
+            ->intersect(ctx.geoContext, particle.position(), startDir,
+                        Acts::BoundaryTolerance::Infinite())
+            .closest();
 
     if (!m_cfg.writeHelixParameters) {
       auto position = intersection.position();
@@ -216,8 +218,15 @@ ActsExamples::ProcessCode ActsExamples::RootParticleWriter::writeT(
 
       // No covariance/time required here, but you can supply them if you have
       // them
-      Acts::CurvilinearTrackParameters startParams(startPos, startDir, qOverP,
-                                                   std::nullopt /* cov */);
+      // Acts::BoundTrackParameters startParams(startPos, startDir, qOverP,
+      //                                        std::nullopt /* cov */);
+
+      Acts::BoundTrackParameters startParams =
+          Acts::BoundTrackParameters::createCurvilinear(
+              // startPos, startDir, qOverP, std::move(covOpt),
+              // state.particleHypothesis);
+              particle.fourPosition(), startDir, qOverP, std::nullopt,
+              Acts::ParticleHypothesis::pion());
 
       // Propagation options (need event contexts)
       using PropOptions = PropagatorT::Options<>;
@@ -229,7 +238,7 @@ ActsExamples::ProcessCode ActsExamples::RootParticleWriter::writeT(
 
       // Do the propagation to the perigee surface
       auto propRes = propagator->propagate(startParams, *pSurface, pOptions);
-      if (!propRes.ok() || propRes->endParameters == nullptr) {
+      if (!propRes.ok() || !propRes->endParameters.has_value()) {
         ACTS_ERROR("Propagation to perigee surface failed.");
         m_phi.push_back(NaNfloat);
         m_theta.push_back(NaNfloat);
