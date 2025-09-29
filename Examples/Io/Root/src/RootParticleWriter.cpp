@@ -238,6 +238,12 @@ ActsExamples::ProcessCode ActsExamples::RootParticleWriter::writeT(
         m_qop.push_back(NaNfloat);
         m_d0.push_back(NaNfloat);
         m_z0.push_back(NaNfloat);
+        m_p.push_back(NaNfloat);
+        m_px.push_back(NaNfloat);
+        m_py.push_back(NaNfloat);
+        m_pz.push_back(NaNfloat);
+        m_eta.push_back(NaNfloat);
+        m_pt.push_back(NaNfloat);
         continue;
       }
       const Acts::BoundTrackParameters& atPerigee = *propRes->endParameters;
