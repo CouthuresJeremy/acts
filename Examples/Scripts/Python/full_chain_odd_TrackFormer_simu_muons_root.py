@@ -363,6 +363,7 @@ selector = acts.examples.ParticleSelector(
                 # pt=(1.0 * u.GeV, None),
                 # eta=(-3.0, 3.0),
                 hits=(1, None),
+                removeSecondaries=True,
             ),
         )
     ),
