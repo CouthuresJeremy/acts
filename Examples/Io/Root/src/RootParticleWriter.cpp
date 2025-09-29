@@ -216,11 +216,6 @@ ActsExamples::ProcessCode ActsExamples::RootParticleWriter::writeT(
       using PropagatorT = Acts::Propagator<Stepper>;
       auto propagator = std::make_shared<PropagatorT>(stepper);
 
-      // No covariance/time required here, but you can supply them if you have
-      // them
-      // Acts::BoundTrackParameters startParams(startPos, startDir, qOverP,
-      //                                        std::nullopt /* cov */);
-
       Acts::BoundTrackParameters startParams =
           Acts::BoundTrackParameters::createCurvilinear(
               particle.fourPosition(), startDir, qOverP, std::nullopt,
