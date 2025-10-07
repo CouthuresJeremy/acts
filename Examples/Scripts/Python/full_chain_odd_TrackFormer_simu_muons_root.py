@@ -397,6 +397,15 @@ if args.output_root:
     )
     s.addWriter(rootParticlesWriter)
 
+    rootParticlesWriter = acts.examples.RootParticleWriter(
+        level=logLevel,
+        inputParticles="tmp_particles_hits",
+        writeHelixParameters=True,
+        bField=field,
+        filePath=str(outputDir / "particles_hits_helix.root"),
+    )
+    s.addWriter(rootParticlesWriter)
+
 # Select particles for evaluation
 addDigiParticleSelection(
     s,
